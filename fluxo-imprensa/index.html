@@ -267,7 +267,7 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
     opts=opts||{}; const content=[];
     for(const im of (opts.images||[])) content.push({type:"image",source:{type:"base64",media_type:"image/jpeg",data:await b64(im)}});
     content.push({type:"text",text:prompt});
-    const r=await call({action:"ai",body:JSON.stringify({model:MODEL,max_tokens:opts.maxTokens||8000,messages:[{role:"user",content}]})},opts.signal);
+    const r=await call({action:"ai",body:JSON.stringify({model:MODEL,max_tokens:opts.maxTokens||8000,thinking:{type:"between_tools"},messages:[{role:"user",content}]})},opts.signal);
     const j=r.json;
     if(r.status===429||r.status===529) throw erro("rate_limited","limite de uso da IA");
     if(r.status===413) throw erro("prompt_too_large","texto grande demais");

@@ -229,7 +229,7 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
       document.body.appendChild(o);
       o.querySelector("form").addEventListener("submit",async e=>{
         e.preventDefault(); const m=o.querySelector("#ac-msg"), b=o.querySelector("button");
-        nome=o.querySelector("#ac-nome").value.trim(); code=o.querySelector("#ac-code").value.trim();
+        nome=o.querySelector("#ac-nome").value.trim(); code=o.querySelector("#ac-code").value.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,""); // aceita com ou sem acento, maiúsculas ou minúsculas
         b.disabled=true; m.textContent="Conferindo…";
         try{ const r=await call({action:"ping"}); if(r.status!==200) throw erro("x","resposta inesperada"); try{ localStorage.setItem(LS,JSON.stringify({code,nome})); }catch(e){} o.remove(); liberar(); }
         catch(err){ m.textContent=err.code==="not_granted"?"Código incorreto.":"Não consegui conferir agora. Tente de novo."; b.disabled=false; }

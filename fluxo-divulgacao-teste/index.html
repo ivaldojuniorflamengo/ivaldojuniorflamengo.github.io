@@ -536,10 +536,10 @@ function tiraSecao(t,nome){ const i=t.indexOf("=== "+nome+" ==="); if(i<0) retur
 // Resultado completo: tudo que a análise gerou + a resposta da assessoria no fim (é o que aparece na tela e o que "Copiar tudo" leva)
 function saidaCompleta(){
   if(!state.output) return "";
-  const t=["MENSAGEM PARA O GRUPO DE IMPRENSA","POTENCIAL DE MANCHETE","ESPORTE OLÍMPICO"].reduce((a,n)=>tiraSecao(a,n),state.output);
+  const t=["MENSAGEM PARA O GRUPO DE IMPRENSA","MENSAGENS PARA A IMPRENSA","POTENCIAL DE MANCHETE","ESPORTE OLÍMPICO"].reduce((a,n)=>tiraSecao(a,n),state.output);
   return t+"\n\n=== PARA A ASSESSORIA DE IMPRENSA ===\n"+assessoria();
 }
-function assessoria(partes){
+function assessoria(partes,soN){
   const d=decisao(), p=d.p, secs=sections();
   const yes=QS.filter(q=>state.ans[q.k]).map(q=>q.t);
   const L=[`RESPOSTA PARA A ASSESSORIA DE IMPRENSA — ${p.n}`,
@@ -555,7 +555,7 @@ function assessoria(partes){
   if(pm.length) L.splice(L.indexOf("O que fazer:"),0,`Potencial de manchete (avaliação da IA): ${/^\W*sim/i.test(pm[0])?"Sim":"Não"}${pm[1]?" — "+pm[1]:""}`);
   const ol=(secs["ESPORTE OLÍMPICO"]||"").split("\n").map(x=>x.trim()).filter(Boolean), olimpico=ol.length>0&&/^\W*sim/i.test(ol[0]);
   if(d.dec==="go"&&p.n!=="Memengo") L.push("","GRUPOS DE WHATSAPP PARA ENVIO:",...gruposDe(p.seg+(olimpico?" + OLÍMPICOS":"")),`POR QUE ESSES GRUPOS: ${p.why}${olimpico?" O episódio envolve esporte olímpico do Flamengo"+(ol[1]?" ("+ol[1].replace(/\.$/,"")+")":"")+": vai também para o grupo de imprensa de olímpicos.":""}`,`COMO VIRA NOTÍCIA: ${p.ang}`);
-  const msg=d.dec!=="no"?(secs["MENSAGEM PARA O GRUPO DE IMPRENSA"]||"").trim():"";
+  const msg=d.dec==="no"?"":soN?(((secs["MENSAGENS PARA A IMPRENSA"]||"").split(/^(?=-{3,}\s*MATÉRIA #)/m).find(x=>new RegExp("^-{3,}\\s*MATÉRIA #"+soN+"\\b").test(x.trim()))||"").replace(/^-{3,}.*-{3,}\s*/,"").trim()):(secs["MENSAGEM PARA O GRUPO DE IMPRENSA"]||"").trim();
   if(partes){ // WhatsApp: a decisão com uma linha em branco entre os blocos; a mensagem para a imprensa vai separada, pronta para copiar
     const out=[]; L.filter(x=>x.trim()).forEach((x,i)=>{ if(i&&!x.startsWith("- ")) out.push(""); out.push(i===0?`*${x}*`:x); });
     return {decisao:out.join("\n"),mensagem:msg};
@@ -669,6 +669,31 @@ Motivos marcados no checklist: ${yes.join("; ")||"(nenhum)"}
 
 TRANSCRIÇÃO / ROTEIRO DO EPISÓDIO:
 ${resumo.slice(0,90000)}`;
+  const LEGENDAS_CORTES=`Depois os mesmos cortes, do maior ao menor potencial de viralização. Sem notas numéricas. Para cada um, uma linha:
+#N · Por quê: os motivos em uma linha (declaração forte, polêmica ou revelação; emoção ou história pessoal; nome ou assunto que a torcida reconhece na hora; o trecho se entende sozinho; hook forte; duração adequada ao assunto). Não escreva restrição de rede por duração: cada corte sai do mesmo tamanho em todas as redes do programa, e nenhuma legenda comenta a duração.
+Em seguida uma legenda pronta por rede, respeitando o limite de cada campo. Redes deste programa:
+${redesVideo}
+Regras: cada legenda cita o programa e a FlamengoTV; não repete o hook palavra por palavra; HASHTAGS: toda legenda, descrição ou texto, em TODAS as redes (cortes, episódio completo e dia seguinte), termina com exatamente estas duas hashtags e nenhuma outra: ${hashtags(p)}; Shorts com título e descrição separados; sem link no corpo (o link vai no campo próprio).
+${p.crono?`${UNIDS[0].toUpperCase()+UNIDS.slice(1)} saem ESCALONAD${repMode?"AS":"OS"} pelo cronograma deste programa, não tod${repMode?"as":"os"} no mesmo dia. Logo abaixo da linha "#N · Por quê", escreva a linha "Quando: …" com o dia e as redes daquele corte: ${p.crono}. O YouTube Shorts recebe todos os cortes. Escreva legenda só para as redes daquele corte.`:""}
+`;
+  const regrasMateria=`Padrão Abre Aspas (ge), para flamengo.com.br. Partes, com os rótulos em maiúsculas:
+TÍTULO: institucional, sem aspa e sem dois-pontos, neste modelo: "No Em Nome do Jogo, na FlamengoTV, os jornalistas Rodrigo Capelo e Rodrigo Mattos falam sobre o endividamento dos clubes brasileiros". Ou seja: "No ${p.n}, na FlamengoTV, " + quem (profissão ou papel + nome completo de cada entrevistado) + "fala/falam sobre" + o tema do episódio em poucas palavras. Caixa normal (não escreva em maiúsculas).
+TÍTULO DE DESTAQUE: versão reduzida do TÍTULO, só para a home do site: no máximo 60 caracteres contando os espaços (conte antes de escrever), sem aspas e sem ponto final, com o nome de quem fala e o assunto (ex.: "Capelo e Mattos analisam o endividamento dos clubes").
+SUBTÍTULO: a linha de Abre Aspas: frase em terceira pessoa que resume o que a pessoa disse (quem + verbo + o quê), seguida de dois-pontos e de uma aspa literal curta (até 8 palavras) entre aspas. Como os nomes já estão no título, aqui a pessoa é nomeada pelo papel ("Jornalistas defendem…", "Ator relembra…", "Atacante diz…"). Regras: (a) a oração imediatamente antes dos dois-pontos é a que a aspa comenta; os outros assuntos do título vêm antes dela; (b) a frase traz o conteúdo e nunca repete nem antecipa as palavras da aspa; (c) nenhuma palavra que esteja dentro da aspa aparece no resto do título: se a aspa diz "Flamengo", o título usa "Rubro-Negro", "Mengão" ou "o clube". Exemplos de forma: Rui Costa diz que demitiria Crespo de novo e comenta o drama de Oscar: "Não morreu por milagre" / Hernanes critica futebol moderno e a falta de craques no Brasil: "Não tem espaço para o transgressor". Errado: Babu Santana coloca o Flamengo acima da Seleção Brasileira e propõe naturalizar Arrascaeta: "Vibro mais com o Flamengo" (a oração colada aos dois-pontos não é a que a aspa comenta, e repete "Flamengo"). Certo: Ator propõe naturalizar Arrascaeta e coloca o Rubro-Negro acima da Seleção Brasileira: "Vibro mais com o Flamengo".
+CAPA: ${repMode?"a foto da reportagem (vai no .zip).":"o nome do arquivo da foto-01 da lista FOTOS DA MATÉRIA."}
+[VÍDEO DA FLAMENGOTV]
+TEXTO: ${repMode?"de 3 a 5":"de 6 a 10"} parágrafos corridos, sem rótulos internos, para quem NÃO viu o vídeo.${p.materia==="assinada"?" NESTE PROGRAMA a matéria é assinada pelo próprio apresentador ("+AP+"), como coluna dele no site: escreva em primeira pessoa, com a voz dele, sem aspas dele mesmo (as análises entram como texto corrido) e feche com a assinatura em linha própria: "+AP+", apresentador do "+p.n+", na FlamengoTV. O título institucional e o subtítulo continuam em terceira pessoa.":""} Uma linha em branco entre TODOS os parágrafos, aspas e marcas de foto incluídas (o editor do site só entende a quebra assim).
+- 1º parágrafo: apresenta a(s) pessoa(s) com nome completo e credencial na primeira menção (use a função informada no campo "Convidado ou personagem", ex.: "Rodrigo Capelo, sócio-diretor do Sport Insider, e Rodrigo Mattos, colunista do UOL"), diz o que elas acompanham ou representam e traz o dado ou fato central do episódio com a fonte nomeada por extenso ("Segundo o relatório da Agência X de 2025, …"). Sem data nem horário de publicação.
+- 2º parágrafo: abre com uma aspa curta entre aspas e, na mesma frase, diz quem resumiu assim, em conversa com quem, "no ${p.n}, programa da FlamengoTV, apresentado por ${AP}". É a única vez que o programa é citado no texto.
+- Depois, alternar parágrafo de contexto em terceira pessoa (2 a 4 frases, com os dados sempre atribuídos à fonte: "segundo o balanço da…") com aspa longa, assim:
+“Aspa literal de 2 a 6 frases, em primeira pessoa”, disse NOME. — aspas curvas, o verbo depois da aspa, só o sobrenome ou o primeiro nome depois da primeira menção, e verbos variados (disse, afirmou, salientou, explicou, completou); nunca repita "em entrevista ao programa" depois das aspas; nunca use travessão para abrir aspa.
+- Edição das aspas: texto para ser lido, não transcrição. Corrija concordância ("é complicada a gestão"), tire vícios e redundâncias da fala ("Você na tua vida tem" → "Você tem"; "lá atrás"; "assim"), troque gíria por registro jornalístico sem mudar o sentido ("não deu certo" → "não deu os resultados esperados"; "muito pequena" → "muito branda") e corte da aspa a frase que só repete o que o parágrafo de contexto já disse.
+- Nomes de entidades, relatórios e cargos por extenso quando o texto permitir; quando a legenda automática parecer ter errado um nome próprio (sigla ou entidade estranha), escreva a melhor forma seguida de [confirmar nome] para o revisor.
+${repMode?"- Sem marcas de foto dentro do texto. Nenhum vídeo dentro do texto.":"- A cada 2 ou 3 parágrafos, uma linha [FOTO: nome-do-arquivo.jpg] usando as fotos da lista FOTOS DA MATÉRIA (não a capa), com os nomes exatamente iguais aos da lista. Nenhum vídeo dentro do texto."}
+- Proibido no texto: minutagem, "no trecho", "no vídeo acima", horário de publicação, comentários sobre o que o roteiro tem ou não tem.
+- Última linha do texto: a marca [VÍDEO DA FLAMENGOTV], sozinha na linha (ali o vídeo entra incorporado de novo). Não escreva o link do YouTube no texto.
+${ehEntrevista?`Depois do texto, um ENTRETÍTULO em uma linha só, sem rótulo, neste modelo: Leia mais da conversa da Tainara no Mengocast (troque pelo primeiro nome do entrevistado, com "da" ou "do" conforme a pessoa, e pelo nome deste programa: ${p.n}). Abaixo dele, as perguntas e respostas como no Abre Aspas, na ordem do episódio, as 12 a 15 mais relevantes (menos, se o episódio for curto). Cada pergunta do apresentador em uma linha própria, sem nenhum prefixo ou rótulo (resuma quando for longa ou implícita), e na linha seguinte a resposta do entrevistado entre aspas, em primeira pessoa, literal e limpa de vícios de fala, com no máximo 5 frases cada (corte o que for digressão, sem mudar o sentido). Linha em branco entre cada par. Quando o episódio tem MAIS DE UM entrevistado, cada resposta começa com o nome de quem falou e dois-pontos, antes das aspas (ex.: Rodrigo Capelo: "…"); descubra quem fala pelas pistas da transcrição (o apresentador chama a pessoa pelo nome antes da pergunta; quem responde cita o outro convidado pelo nome; quem fala em seguida comenta a fala anterior); se a pergunta foi respondida pelos dois, faça dois parágrafos de resposta, um por pessoa; se não houver pista nenhuma, escreva [confirmar quem falou]: nunca chute. Com um entrevistado só, sem nome. A pergunta nunca traz o nome de quem vai responder (nada de "Mattos, como explicar…": escreva só "Como explicar…"), porque o nome já aparece antes da resposta. Se o texto for roteiro e não transcrição, escreva só: "Perguntas e respostas: disponível quando a transcrição for anexada".`:`Depois do texto, um ENTRETÍTULO em uma linha só, sem rótulo: Leia mais do ${p.n}. Abaixo dele, como este programa não é entrevista, as 5 a 8 falas mais fortes do episódio, literais, entre aspas, cada uma com travessão e o nome de quem disse, na ordem em que aparecem.`}`;
+  const MSG_IMPRENSA=`Mensagem de WhatsApp pronta para colar, depois que a matéria for publicada, em TRÊS parágrafos separados por uma linha em branco: (1) o título da matéria; (2) uma frase, terminada em ponto, com quem falou, em que programa da FlamengoTV e quem apresentou (${AP}); (3) duas linhas coladas, nesta ordem: "Episódio: ${link}" e, embaixo, "Matéria completa: [link da matéria no site]". Sem aspas extras, sem crédito, sem data.`;
   const promptA=`${regras}
 
 Separe os blocos exatamente com estas linhas de marcação, nesta ordem, e não escreva nada além desses dois blocos:
@@ -683,17 +708,11 @@ Como funciona a montagem: o HOOK é o gancho do vídeo, não a primeira frase. �
 ${temTempo?"Use as marcações de tempo da transcrição.":"O texto não tem marcação de tempo: escreva [sem tempo] e descreva a frase em que o corte começa e a em que termina."}
 
 === PARA QUEM PUBLICA ===
-Primeira linha do bloco: ${repMode?"REPORTAGENS ESPECIAIS":"a palavra CORTES"}, sozinha. Depois ${repMode?"as mesmas reportagens":"os mesmos cortes"}, do maior ao menor potencial de viralização. Sem notas numéricas. Para cada um, uma linha:
-#N · Por quê: os motivos em uma linha (declaração forte, polêmica ou revelação; emoção ou história pessoal; nome ou assunto que a torcida reconhece na hora; o trecho se entende sozinho; hook forte; duração adequada ao assunto). Não escreva restrição de rede por duração: cada corte sai do mesmo tamanho em todas as redes do programa, e nenhuma legenda comenta a duração.
-Em seguida uma legenda pronta por rede, respeitando o limite de cada campo. Redes deste programa:
-${redesVideo}
-Regras: cada legenda cita o programa e a FlamengoTV; não repete o hook palavra por palavra; HASHTAGS: toda legenda, descrição ou texto, em TODAS as redes (cortes, episódio completo e dia seguinte), termina com exatamente estas duas hashtags e nenhuma outra: ${hashtags(p)}; Shorts com título e descrição separados; sem link no corpo (o link vai no campo próprio).
-${p.crono?`${UNIDS[0].toUpperCase()+UNIDS.slice(1)} saem ESCALONAD${repMode?"AS":"OS"} pelo cronograma deste programa, não tod${repMode?"as":"os"} no mesmo dia. Logo abaixo da linha "#N · Por quê", escreva a linha "Quando: …" com o dia e as redes daquele corte: ${p.crono}. O YouTube Shorts recebe todos os cortes. Escreva legenda só para as redes daquele corte.`:""}
-${redesEpisodio?`Em seguida, a linha EPISÓDIO COMPLETO, sozinha, e os textos para o episódio completo (não por corte), um por rede, com o link ${link}:
+${repMode?"Neste programa as legendas de cada reportagem são escritas depois, uma a uma. Aqui escreva só os blocos EPISÓDIO COMPLETO e DIA SEGUINTE descritos abaixo, com as mesmas regras de legenda e hashtags.":""}${repMode?"":`Primeira linha do bloco: a palavra CORTES, sozinha.`} ${repMode?"":LEGENDAS_CORTES}${redesEpisodio?`Em seguida, a linha EPISÓDIO COMPLETO, sozinha, e os textos para o episódio completo (não por corte), um por rede, com o link ${link}:
 ${redesEpisodio}`:""}
 ${redesD1?`Por fim, a linha DIA SEGUINTE, sozinha, e os textos do dia seguinte:
 ${redesD1}`:""}
-${golMode?"Um dos gols (o melhor) também é a chamada do episódio no Story, e o gol com a melhor narração é o que vai para a imprensa: na seção EPISÓDIO COMPLETO, indique na primeira linha qual corte (#N) é a chamada do Story e qual (#N) tem a melhor narração para a imprensa. Como não há apresentador, não existe chamada de véspera.":repMode?"Escreva as legendas de TODAS as matérias listadas no bloco PARA O EDITOR, com o mesmo número (#N), uma por uma. A reportagem especial será escolhida depois entre elas: por isso, na linha \"Quando\" de cada uma, escreva \"se for a reportagem especial escolhida: \" seguido do dia e das redes do cronograma. Cada matéria sai inteira: o VOD no YouTube recebe título e descrição próprios; o Shorts é o trecho-hook da matéria.":""}
+${golMode?"Um dos gols (o melhor) também é a chamada do episódio no Story, e o gol com a melhor narração é o que vai para a imprensa: na seção EPISÓDIO COMPLETO, indique na primeira linha qual corte (#N) é a chamada do Story e qual (#N) tem a melhor narração para a imprensa. Como não há apresentador, não existe chamada de véspera.":repMode?"":""}
 
 ${contexto}`;
   const promptB=`${regras}
@@ -701,38 +720,46 @@ ${contexto}`;
 Separe os blocos exatamente com estas linhas de marcação, nesta ordem, e não escreva nada além deles:
 
 === FOTOS DA MATÉRIA ===
-De 4 a 5 momentos do vídeo que viram foto da matéria, um por linha, exatamente assim:
+${repMode?`NESTE PROGRAMA: uma foto por reportagem da lista abaixo, com a MESMA numeração (foto-01 é da reportagem #1, foto-02 da #2…), num momento DENTRO do intervalo da reportagem, no formato "foto-NN-descricao-curta-sem-acento.jpg · [mm:ss] · quem deve aparecer e como · capa da reportagem #N". Ignore o resto das instruções deste bloco.
+REPORTAGENS:
+@@LISTA_REPORTAGENS@@
+`:""}De 4 a 5 momentos do vídeo que viram foto da matéria, um por linha, exatamente assim:
 foto-NN-descricao-curta-sem-acento.jpg · [mm:ss] · quem deve aparecer e como · onde entra (capa, ou "depois do parágrafo N")
 Como escolher o momento: a câmera costuma estar em quem está falando, então marque o MEIO de uma resposta longa (pelo menos 10 s depois de a pessoa começar a falar), nunca o instante da pergunta nem o início da resposta. A foto-01 é a capa: um momento de conversa com todos à mesa. As outras alternam o convidado sozinho e os apresentadores com ele; prefira momentos de riso, gesto ou emoção que a transcrição deixe ver. Use só tempos que existam na transcrição.
 
-=== MATÉRIA PARA O SITE ===
-${repMode?`NESTE PROGRAMA escreva UMA MATÉRIA PARA CADA matéria do episódio (cada bloco fechado do programa: reportagem, entrevista, bastidor ou nota com personagem ou assunto próprio; de fora só abertura, vinhetas, passagens da apresentadora e encerramento), na ORDEM em que aparecem no episódio. Antes de cada uma, uma linha exatamente assim: "--- MATÉRIA #N: título curto ---". Cada matéria trata SÓ daquele bloco, tem todas as partes abaixo e fica completa sozinha, porque só uma delas (a reportagem especial, escolhida depois) será publicada. No bloco FOTOS DA MATÉRIA, em vez de 4 a 5 fotos do episódio, liste uma foto de capa por matéria (foto-01 é a capa da matéria #1, foto-02 a da #2, e assim por diante) e escreva "capa da matéria #N" no fim da linha.
-`:""}Padrão Abre Aspas (ge), para flamengo.com.br. Partes, com os rótulos em maiúsculas:
-TÍTULO: institucional, sem aspa e sem dois-pontos, neste modelo: "No Em Nome do Jogo, na FlamengoTV, os jornalistas Rodrigo Capelo e Rodrigo Mattos falam sobre o endividamento dos clubes brasileiros". Ou seja: "No ${p.n}, na FlamengoTV, " + quem (profissão ou papel + nome completo de cada entrevistado) + "fala/falam sobre" + o tema do episódio em poucas palavras. Caixa normal (não escreva em maiúsculas).
-TÍTULO DE DESTAQUE: versão reduzida do TÍTULO, só para a home do site: no máximo 60 caracteres contando os espaços (conte antes de escrever), sem aspas e sem ponto final, com o nome de quem fala e o assunto (ex.: "Capelo e Mattos analisam o endividamento dos clubes").
-SUBTÍTULO: a linha de Abre Aspas: frase em terceira pessoa que resume o que a pessoa disse (quem + verbo + o quê), seguida de dois-pontos e de uma aspa literal curta (até 8 palavras) entre aspas. Como os nomes já estão no título, aqui a pessoa é nomeada pelo papel ("Jornalistas defendem…", "Ator relembra…", "Atacante diz…"). Regras: (a) a oração imediatamente antes dos dois-pontos é a que a aspa comenta; os outros assuntos do título vêm antes dela; (b) a frase traz o conteúdo e nunca repete nem antecipa as palavras da aspa; (c) nenhuma palavra que esteja dentro da aspa aparece no resto do título: se a aspa diz "Flamengo", o título usa "Rubro-Negro", "Mengão" ou "o clube". Exemplos de forma: Rui Costa diz que demitiria Crespo de novo e comenta o drama de Oscar: "Não morreu por milagre" / Hernanes critica futebol moderno e a falta de craques no Brasil: "Não tem espaço para o transgressor". Errado: Babu Santana coloca o Flamengo acima da Seleção Brasileira e propõe naturalizar Arrascaeta: "Vibro mais com o Flamengo" (a oração colada aos dois-pontos não é a que a aspa comenta, e repete "Flamengo"). Certo: Ator propõe naturalizar Arrascaeta e coloca o Rubro-Negro acima da Seleção Brasileira: "Vibro mais com o Flamengo".
-CAPA: o nome do arquivo da foto-01 da lista FOTOS DA MATÉRIA.
-[VÍDEO DA FLAMENGOTV]
-TEXTO: ${repMode?"de 3 a 5":"de 6 a 10"} parágrafos corridos, sem rótulos internos, para quem NÃO viu o vídeo.${p.materia==="assinada"?" NESTE PROGRAMA a matéria é assinada pelo próprio apresentador ("+AP+"), como coluna dele no site: escreva em primeira pessoa, com a voz dele, sem aspas dele mesmo (as análises entram como texto corrido) e feche com a assinatura em linha própria: "+AP+", apresentador do "+p.n+", na FlamengoTV. O título institucional e o subtítulo continuam em terceira pessoa.":""} Uma linha em branco entre TODOS os parágrafos, aspas e marcas de foto incluídas (o editor do site só entende a quebra assim).
-- 1º parágrafo: apresenta a(s) pessoa(s) com nome completo e credencial na primeira menção (use a função informada no campo "Convidado ou personagem", ex.: "Rodrigo Capelo, sócio-diretor do Sport Insider, e Rodrigo Mattos, colunista do UOL"), diz o que elas acompanham ou representam e traz o dado ou fato central do episódio com a fonte nomeada por extenso ("Segundo o relatório da Agência X de 2025, …"). Sem data nem horário de publicação.
-- 2º parágrafo: abre com uma aspa curta entre aspas e, na mesma frase, diz quem resumiu assim, em conversa com quem, "no ${p.n}, programa da FlamengoTV, apresentado por ${AP}". É a única vez que o programa é citado no texto.
-- Depois, alternar parágrafo de contexto em terceira pessoa (2 a 4 frases, com os dados sempre atribuídos à fonte: "segundo o balanço da…") com aspa longa, assim:
-“Aspa literal de 2 a 6 frases, em primeira pessoa”, disse NOME. — aspas curvas, o verbo depois da aspa, só o sobrenome ou o primeiro nome depois da primeira menção, e verbos variados (disse, afirmou, salientou, explicou, completou); nunca repita "em entrevista ao programa" depois das aspas; nunca use travessão para abrir aspa.
-- Edição das aspas: texto para ser lido, não transcrição. Corrija concordância ("é complicada a gestão"), tire vícios e redundâncias da fala ("Você na tua vida tem" → "Você tem"; "lá atrás"; "assim"), troque gíria por registro jornalístico sem mudar o sentido ("não deu certo" → "não deu os resultados esperados"; "muito pequena" → "muito branda") e corte da aspa a frase que só repete o que o parágrafo de contexto já disse.
-- Nomes de entidades, relatórios e cargos por extenso quando o texto permitir; quando a legenda automática parecer ter errado um nome próprio (sigla ou entidade estranha), escreva a melhor forma seguida de [confirmar nome] para o revisor.
-- A cada 2 ou 3 parágrafos, uma linha [FOTO: nome-do-arquivo.jpg] usando as fotos da lista FOTOS DA MATÉRIA (não a capa), com os nomes exatamente iguais aos da lista. Nenhum vídeo dentro do texto.
-- Proibido no texto: minutagem, "no trecho", "no vídeo acima", horário de publicação, comentários sobre o que o roteiro tem ou não tem.
-- Última linha do texto: a marca [VÍDEO DA FLAMENGOTV], sozinha na linha (ali o vídeo entra incorporado de novo). Não escreva o link do YouTube no texto.
-${ehEntrevista?`Depois do texto, um ENTRETÍTULO em uma linha só, sem rótulo, neste modelo: Leia mais da conversa da Tainara no Mengocast (troque pelo primeiro nome do entrevistado, com "da" ou "do" conforme a pessoa, e pelo nome deste programa: ${p.n}). Abaixo dele, as perguntas e respostas como no Abre Aspas, na ordem do episódio, as 12 a 15 mais relevantes (menos, se o episódio for curto). Cada pergunta do apresentador em uma linha própria, sem nenhum prefixo ou rótulo (resuma quando for longa ou implícita), e na linha seguinte a resposta do entrevistado entre aspas, em primeira pessoa, literal e limpa de vícios de fala, com no máximo 5 frases cada (corte o que for digressão, sem mudar o sentido). Linha em branco entre cada par. Quando o episódio tem MAIS DE UM entrevistado, cada resposta começa com o nome de quem falou e dois-pontos, antes das aspas (ex.: Rodrigo Capelo: "…"); descubra quem fala pelas pistas da transcrição (o apresentador chama a pessoa pelo nome antes da pergunta; quem responde cita o outro convidado pelo nome; quem fala em seguida comenta a fala anterior); se a pergunta foi respondida pelos dois, faça dois parágrafos de resposta, um por pessoa; se não houver pista nenhuma, escreva [confirmar quem falou]: nunca chute. Com um entrevistado só, sem nome. A pergunta nunca traz o nome de quem vai responder (nada de "Mattos, como explicar…": escreva só "Como explicar…"), porque o nome já aparece antes da resposta. Se o texto for roteiro e não transcrição, escreva só: "Perguntas e respostas: disponível quando a transcrição for anexada".`:`Depois do texto, um ENTRETÍTULO em uma linha só, sem rótulo: Leia mais do ${p.n}. Abaixo dele, como este programa não é entrevista, as 5 a 8 falas mais fortes do episódio, literais, entre aspas, cada uma com travessão e o nome de quem disse, na ordem em que aparecem.`}
+${repMode?"":`=== MATÉRIA PARA O SITE ===
+${regrasMateria}
 
-=== MENSAGEM PARA O GRUPO DE IMPRENSA ===
-Mensagem de WhatsApp pronta para colar, depois que a matéria for publicada, em TRÊS parágrafos separados por uma linha em branco: (1) o título da matéria; (2) uma frase, terminada em ponto, com quem falou, em que programa da FlamengoTV e quem apresentou (${AP}); (3) duas linhas coladas, nesta ordem: "Episódio: ${link}" e, embaixo, "Matéria completa: [link da matéria no site]". Sem aspas extras, sem crédito, sem data.
+`}${repMode?"":`=== MENSAGEM PARA O GRUPO DE IMPRENSA ===
+${MSG_IMPRENSA}
 
-=== POTENCIAL DE MANCHETE ===
+`}=== POTENCIAL DE MANCHETE ===
 Avalie, só com base na transcrição, se o episódio traz declaração ou fato com potencial de manchete para a imprensa: revelação, bastidor inédito, posição sobre polêmica ou número novo. Exatamente duas linhas: na primeira, só a palavra SIM ou NÃO; na segunda, se SIM, a declaração ou o fato (literal e curto, com o nome de quem disse) e por que rende manchete; se NÃO, o motivo em uma frase.
 
 === ESPORTE OLÍMPICO ===
 Diga se o assunto principal do episódio é um esporte olímpico do Flamengo (basquete, vôlei, natação, ginástica, judô, remo, polo aquático, nado artístico e outras modalidades fora do futebol), por exemplo quando o convidado é atleta ou integrante de comissão técnica de uma dessas modalidades. Exatamente duas linhas: na primeira, só a palavra SIM ou NÃO; na segunda, se SIM, a modalidade e quem é a pessoa; se NÃO, um traço.
+
+${contexto}`;
+  const promptC=(n,linhas)=>`${regras}
+
+Este episódio do ${p.n} tem várias reportagens. Agora você trabalha SÓ na reportagem #${n}, descrita no bloco do editor abaixo. Use só a parte da transcrição dentro do intervalo dela; o resto do episódio é contexto e não entra em nenhum texto.
+${linhas}
+
+Separe os blocos exatamente com estas linhas de marcação, nesta ordem, e não escreva nada além deles:
+
+=== LEGENDAS ===
+Primeira linha: #${n} · Por quê: os motivos em uma linha (emoção ou história pessoal; nome ou assunto que a torcida reconhece na hora; a reportagem se entende sozinha; hook forte).
+Segunda linha: Quando: se for a reportagem especial escolhida: ${p.crono||"pelo cronograma do programa"}
+Em seguida uma legenda pronta por rede, respeitando o limite de cada campo. A reportagem sai inteira: o VOD no YouTube recebe título e descrição próprios; o Shorts é o trecho-hook. Redes:
+${redesVideo}
+Regras: cada legenda cita o programa e a FlamengoTV; não repete o hook palavra por palavra; toda legenda, descrição ou texto termina com exatamente estas duas hashtags e nenhuma outra: ${hashtags(p)}; Shorts com título e descrição separados; sem link no corpo, exceto a descrição do VOD, que termina com "Episódio completo: ${link}".
+
+=== MATÉRIA ===
+Primeira linha exatamente: --- MATÉRIA #${n}: título curto ---
+${regrasMateria}
+
+=== MENSAGEM ===
+${MSG_IMPRENSA}
 
 ${contexto}`;
   ctl=new AbortController();
@@ -745,9 +772,29 @@ ${contexto}`;
     // Duas gerações para caber no limite de tamanho: (A) editor e publicadores; (B) fotos, matéria e blocos da assessoria
     const rA=await sampleFn(promptA,{signal:ctl.signal, modelTier:"default", onText:({text})=>{ $("genstatus").textContent="Escrevendo cortes e legendas (1 de 2)…"; textA=text; monta(); }});
     textA=rA.text+(rA.truncated?"\n[bloco cortado pelo limite de tamanho]":""); monta();
+    if(repMode){
+      // FlaPress: uma geração por reportagem, na numeração do bloco do editor (legendas, matéria e mensagem de cada uma); depois as fotos
+      const ed=(textA.match(/=== PARA O EDITOR ===([\s\S]*?)(?=\n=== |$)/)||["",""])[1];
+      const reps=ed.split("\n").map(l=>l.match(/^#(\d+)\s*·.*?(?:Reportagem|Matéria):\s*(.+?)(?:\s*·\s*Formato:.*)?$/i)).filter(Boolean).map(m=>+m[1]);
+      if(!reps.length) throw Object.assign(new Error("a IA não listou as reportagens do episódio"),{code:"sem_reportagens"});
+      const lin=n=>{ const L=ed.split("\n"); const i=L.findIndex(l=>new RegExp("^#"+n+"\\b").test(l.trim())); let j=i+1; while(j<L.length&&!/^#\d+\b/.test(L[j].trim())) j++; return L.slice(i,j).join("\n").trim(); };
+      const res={}; let feitas=0; const fila=[...reps];
+      const um=async()=>{ while(fila.length){ const n=fila.shift(); const r=await sampleFn(promptC(n,lin(n)),{signal:ctl.signal,modelTier:"default",maxTokens:8000}); res[n]=r.text||""; feitas++; $("genstatus").textContent=`Escrevendo legendas e matéria de cada reportagem (${feitas} de ${reps.length})…`; } };
+      $("genstatus").textContent=`Escrevendo legendas e matéria de cada reportagem (0 de ${reps.length})…`;
+      await Promise.all([um(),um()]);
+      const pega=(t,nome)=>((t||"").match(new RegExp("=== "+nome+" ===\\s*\\n([\\s\\S]*?)(?=\\n=== |$)"))||["",""])[1].trim();
+      const leg=reps.map(n=>pega(res[n],"LEGENDAS")).filter(Boolean).join("\n\n");
+      const mat=reps.map(n=>{ const m=pega(res[n],"MATÉRIA"); return m&&!/^-{3,}\s*MATÉRIA #/.test(m)?`--- MATÉRIA #${n} ---\n${m}`:m; }).filter(Boolean).join("\n\n");
+      const msgs=reps.map(n=>{ const m=pega(res[n],"MENSAGEM"); return m?`--- MATÉRIA #${n} ---\n${m}`:""; }).filter(Boolean).join("\n\n");
+      textA=textA.replace(/(=== PARA QUEM PUBLICA ===\s*\n)/,`$1REPORTAGENS ESPECIAIS\n\n${leg}\n\n`); monta();
+      $("genstatus").textContent="Escolhendo as fotos de cada reportagem…";
+      const rB=await sampleFn(promptB.replace("@@LISTA_REPORTAGENS@@",reps.map(n=>lin(n).split("\n")[0]).join("\n")),{signal:ctl.signal, modelTier:"default"});
+      textB=(rB.text||"")+`\n\n=== MATÉRIA PARA O SITE ===\n${mat}\n\n=== MENSAGENS PARA A IMPRENSA ===\n${msgs}`; monta();
+    } else {
     $("genstatus").textContent="Lendo de novo para a matéria (2 de 2)…";
     const rB=await sampleFn(promptB,{signal:ctl.signal, modelTier:"default", onText:({text})=>{ $("genstatus").textContent="Escrevendo a matéria (2 de 2)…"; textB=text; monta(); }});
     textB=rB.text+(rB.truncated?"\n[matéria cortada pelo limite de tamanho: as perguntas e respostas podem estar incompletas]":""); monta();
+    }
     state.analyzed=true; showOutput(); salvaRascunho(); autoSalvar();
     // Etapas 2 e 3, automáticas: prints (a IA escolhe o frame; quem publica troca se precisar) e cards no Notion
     if(mcp&&ytId(link)&&!state.fotosRodando){ $("genstatus").textContent="Gerando as capas e fotos (etapa 2 de 4)…"; await gerarFotos(); }
@@ -782,7 +829,7 @@ function posProcessa(text,p,link){
   if(p.collab) t=t.replace(/=== PARA QUEM PUBLICA ===\s*\n/, m=>m+`COLLAB: ${p.collab}\n`);
   // Matéria: uma linha em branco entre TODOS os parágrafos (o editor do CMS só entende quebra de parágrafo assim)
   t=t.replace(/(=== MATÉRIA PARA O SITE ===\s*\n)([\s\S]*?)(?=\n=== |$)/, (m,h,body)=>h+body.split("\n").map(l=>l.trim()).filter(Boolean).join("\n\n")+"\n");
-  { let k=0; t=t.replace(/\[VÍDEO DA FLAMENGOTV\]/g, ()=>`CÓDIGO DE INCORPORAÇÃO (${k++===0?"cole antes do texto":"cole aqui, no fim do texto"}):\n${embedCode(link)}`); }
+  t=t.split(/^(?=-{3,}\s*MATÉRIA #)/m).map(parte=>{ let k=0; return parte.replace(/\[VÍDEO DA FLAMENGOTV\]/g, ()=>`CÓDIGO DE INCORPORAÇÃO (${k++===0?"cole antes do texto":"cole aqui, no fim do texto"}):\n${embedCode(link)}`); }).join("");
   return t;
 }
 // Blocos com botão de copiar (editor vai pelo pacote .txt; fotos vão pela galeria)
@@ -977,7 +1024,7 @@ async function baixar(nome,data){
   try{ await downloadsFn.save({filename:nome,data}); toast("Arquivo salvo."); }
   catch(e){ if(e&&e.code==="declined") toast("Download cancelado."); else toast("Não foi possível salvar o arquivo."); }
 }
-function pacoteEditor(){ const s=sections(); return `${prog().n} · ${$("tema").value.trim()}\nApresenta: ${$("apresentadores").value.trim()}\n\n=== PARA O EDITOR ===\n${s["PARA O EDITOR"]||""}\n\n=== TRANSCRIÇÃO ===\n${transcricaoAtual()}`; }
+function pacoteEditor(soN){ const s=sections(); const ed=s["PARA O EDITOR"]||""; return `${prog().n} · ${$("tema").value.trim()}\nApresenta: ${$("apresentadores").value.trim()}\n\n=== PARA O EDITOR ===\n${soN?(()=>{ const L=ed.split("\n"); const k=L.findIndex(l=>/^#\d+\b/.test(l.trim())); return (L.slice(0,k<0?L.length:k).join("\n").trim()+"\n\n"+trechoN(ed,soN)).trim(); })():ed}\n\n=== TRANSCRIÇÃO ===\n${transcricaoAtual()}`; }
 $("dled").addEventListener("click",()=>baixar(`editor-${slug()}.txt`,pacoteEditor()));
 
 // --- Notion: um card por conteúdo (corte em 9:16; corte em 16:9 à parte; carrossel de aspas), montado pela IA a partir do bloco dos publicadores
@@ -991,7 +1038,8 @@ function materiaN(n){ const t=sections()["MATÉRIA PARA O SITE"]||""; const part
 async function enviarNotion(soN){
   soN=typeof soN==="number"?soN:0;
   const NT=window.fluxoNotion; const secs=sections(); const pub=soN?trechoN(secs["PARA QUEM PUBLICA"]||"",soN):(secs["PARA QUEM PUBLICA"]||"");
-  if(!NT||!sampleFn||!pub||state.notionRodando) return;
+  if(!NT||!sampleFn||state.notionRodando) return;
+  if(!pub){ nStatus(soN?`Não encontrei as legendas da reportagem #${soN} no resultado; nada foi enviado ao Notion. Analise o episódio de novo.`:"Não há bloco dos publicadores no resultado; nada foi enviado ao Notion."); return; }
   state.notionRodando=true; showOutput();
   try{
     nStatus("Notion: lendo as opções da base…");
@@ -1020,7 +1068,7 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
     const esporte=so(plano.esporte,meta.esporte,"Sem Esporte Relacionado"), marca=so(plano.marca,meta.marca,"Sem Marca Envolvida");
     const areas=["Redes | @Flamengo",plano.olimpico?"Redes | @TimeFlamengo":"",plano.feminino?"Redes | @FlamengoFutebolFeminino":"","FlamengoTV"];
     const dataOk=d=>/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(String(d||""))?d:(H||hoje).slice(0,10);
-    const txt=pacoteEditor(); const feitos=[];
+    const txt=pacoteEditor(soN); const feitos=[];
     for(let i=0;i<lista.length;i++){
       const c=lista[i]; const n=soN||+c.corte||i+1; const car=c.formato==="carrossel";
       nStatus(`Notion: criando o card ${i+1} de ${lista.length}…`);
@@ -1049,7 +1097,7 @@ async function enviarTextos(soN){
   const EN=window.fluxoEntrega; if(!EN||!state.output||state.entregaRodando) return;
   const eS=t=>{ $("entregastatus").textContent=t; }; state.entregaRodando=true;
   const p=prog(), secs=sections(), nomeProg=p.n==="Mengocast"?"MengoCast":p.n, titulo=(soN&&(reportagens().find(r=>r.n===soN)||{}).titulo)||$("tema").value.trim()||nomeProg, link=$("link").value.trim();
-  const feito=[], falhou=[]; const ent={};
+  const feito=[], falhou=[]; const ent={wa:[]}; const wa=async(t,o)=>{ const r=await EN.whatsapp(t); ent.wa.push({o,id:(r&&(r.messageId||r.zaapId))||""}); return r; };
   try{
     const mat=!COM_MATERIA.includes(p.n)?"":soN?materiaN(soN):(secs["MATÉRIA PARA O SITE"]||"").trim();
     const doZip=f=>!soN||f.corte===soN||new RegExp("^foto-0*"+soN+"\\b").test(f.nome||"");
@@ -1060,15 +1108,15 @@ async function enviarTextos(soN){
       if(soN) state.zipUrl="";
       if(!state.zipUrl&&(state.fotos||[]).some(f=>doZip(f)&&escolhida(f)&&escolhida(f).url)){ eS("Matéria: gerando o .zip das fotos…"); await gerarZip(soN?doZip:null); }
       eS("Matéria: avisando no WhatsApp…");
-      await EN.whatsapp(`*Matéria para revisão e publicação no site*\n${nomeProg} · ${titulo}\n\nTexto (Google Doc): ${d.url}${link?`\nEpisódio: ${link}`:""}${state.zipUrl?"\nFotos e capas: no .zip a seguir.":"\nFotos: não foi possível gerar o .zip; peça os prints."}`);
+      await wa(`*Matéria para revisão e publicação no site*\n${nomeProg} · ${titulo}\n\nTexto (Google Doc): ${d.url}${link?`\nEpisódio: ${link}`:""}${state.zipUrl?"\nFotos e capas: no .zip a seguir.":"\nFotos: não foi possível gerar o .zip; peça os prints."}`,"aviso da matéria");
       feito.push("aviso da matéria no WhatsApp");
       if(state.zipUrl){ try{ await EN.whatsappZip(state.zipUrl,`fotos-${slug()}.zip`); feito.push(".zip das fotos no WhatsApp"); }catch(e){ falhou.push(e.message); } }
     }
     if(decisao().dec==="go"&&p.n!=="Memengo"){
       eS("Assessoria: enviando o texto no WhatsApp…");
-      const A=assessoria(true), pausa=()=>new Promise(r=>setTimeout(r,1500));
-      await EN.whatsapp(A.decisao);
-      if(A.mensagem){ await pausa(); await EN.whatsapp("*MENSAGEM PARA O GRUPO DE IMPRENSA* ⬇️"); await pausa(); await EN.whatsapp(A.mensagem); }
+      const A=assessoria(true,soN), pausa=()=>new Promise(r=>setTimeout(r,1500));
+      await wa(A.decisao,"decisão");
+      if(A.mensagem){ await pausa(); await wa("*MENSAGEM PARA O GRUPO DE IMPRENSA* ⬇️","título"); await pausa(); await wa(A.mensagem,"mensagem"); }
       feito.push("decisão da assessoria"+(A.mensagem?" e mensagem para o grupo de imprensa":"")+" no WhatsApp"); ent.assessoria=true;
     }
     state.entrega=ent; salvaRascunho(); autoSalvar();

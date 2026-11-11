@@ -164,6 +164,7 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
       </div>
       <div class="status" id="fotostatus"></div>
       <div class="status" id="notionstatus"></div>
+      <div class="status" id="entregastatus"></div>
       <div class="gal" id="galeria" hidden>
         <h3>Fotos: escolha a melhor opção de cada momento</h3>
         <div class="note" style="margin-top:0">A opção marcada em vermelho é a escolhida. Clique em outra para trocar. Depois, baixe todas com o nome certo em um .zip: fotos da matéria (1920×1080) e capa de cada corte (só em 1080×1920, recortada no centro, para Reels, TikTok e Shorts) e a thumbnail do episódio no YouTube (thumbnail-youtube.jpg), que também pode entrar na matéria.</div>
@@ -386,6 +387,22 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
   }
   window.fluxoNotion={meta,criar};
 })();
+// ---- Matéria (Google Doc) e avisos por WhatsApp, pelo mesmo cenário do Make
+(function(){
+  const HOOK_N="https://hook.us2.make.com/d17kqoff94i26hnxu59yuxbr35gcc87k";
+  const code=()=>{ try{ return (JSON.parse(localStorage.getItem("fluxo-divulgacao-acesso")||"{}").code)||""; }catch(e){ return ""; } };
+  async function E(action,fields,oque){
+    const r=await fetch(HOOK_N,{method:"POST",body:new URLSearchParams({code:code(),action,...fields})});
+    const t=await r.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
+    if(r.status>=400||!j) throw new Error(oque+" falhou ("+r.status+")");
+    return j;
+  }
+  window.fluxoEntrega={
+    doc:(nome,html)=>E("doc",{name:nome,html},"a criação do Google Doc"),
+    whatsapp:texto=>E("wa_text",{text:texto},"o envio no WhatsApp"),
+    whatsappZip:(url,nome)=>E("wa_doc",{url,name:nome},"o envio do .zip no WhatsApp")
+  };
+})();
 </script>
 <script>
 // Programas (VODs). dias/crono/redes/maxCortes vêm do slide "Cada episódio" de cada apresentação (_sync_live.py).
@@ -592,8 +609,8 @@ Matéria completa: [link da matéria no site]
 }
 
 // Anel de carregamento: gira enquanto o texto de etapa termina em "…" e vira ✓ quando a etapa conclui
-["genstatus","trstatus","fotostatus","zipstatus","notionstatus"].forEach(id=>{ const el=$(id); if(!el) return;
-  const upd=()=>{ const t=el.textContent.trim(); el.classList.toggle("busy",/…/.test(t)&&!/^Pronto|prontos|adicionada/.test(t)); el.classList.toggle("done",/^Pronto|momentos prontos|^Transcrição adicionada|^\.zip pronto|baixado|cards? criados?/i.test(t)); };
+["genstatus","trstatus","fotostatus","zipstatus","notionstatus","entregastatus"].forEach(id=>{ const el=$(id); if(!el) return;
+  const upd=()=>{ const t=el.textContent.trim(); el.classList.toggle("busy",/…/.test(t)&&!/^Pronto|prontos|adicionada/.test(t)); el.classList.toggle("done",/^Pronto|momentos prontos|^Transcrição adicionada|^\.zip pronto|baixado|cards? criados?|^Enviado/i.test(t)); };
   new MutationObserver(upd).observe(el,{childList:true,characterData:true,subtree:true}); upd(); });
 $("ibtn").addEventListener("click",e=>{ e.stopPropagation(); const p=$("ipop"); p.hidden=!p.hidden; $("ibtn").setAttribute("aria-expanded",String(!p.hidden)); });
 document.addEventListener("click",e=>{ const p=$("ipop"); if(!p.hidden&&!p.contains(e.target)){ p.hidden=true; $("ibtn").setAttribute("aria-expanded","false"); } });
@@ -645,7 +662,7 @@ ${resumo.slice(0,90000)}`;
 Separe os blocos exatamente com estas linhas de marcação, nesta ordem, e não escreva nada além desses dois blocos:
 
 === PARA O EDITOR ===
-Só a lista ${repMode?"REPORTAGENS ESPECIAIS":"CORTES"}, sem instruções de edição. ${golMode?`Neste programa os cortes são EXCLUSIVAMENTE os gols do Flamengo, filmados pela câmera da FlamengoTV e com a narração do João Guilherme: um corte por gol, na ordem em que saíram no jogo, e nada mais (nenhuma cena de vestiário, comissão ou atleta vira corte). Localize cada gol pela narração ("gol", "golaço", o nome de quem marcou); a quantidade de cortes é a quantidade de gols do Flamengo no jogo. O corte começa na construção da jogada e termina na comemoração; o hook é o grito de gol. Se a transcrição não deixar localizar nenhum gol, escreva só a linha "Gols não localizados na transcrição: o editor marca pela imagem" e nada mais neste bloco.`:repMode?`Neste programa NÃO há cortes de trechos. Identifique as reportagens especiais do episódio: matérias fechadas, com início, meio e fim (reportagem, entrevista ou bastidor com personagem), que podem ser publicadas sozinhas como VOD avulso no YouTube + Shorts. No máximo 2, da mais forte à mais fraca. Se não houver, escreva só a linha "Sem reportagem especial neste episódio" e nada mais neste bloco.`:`De ${Math.min(3,maxCortes-1)} a ${maxCortes} cortes, do mais forte ao mais fraco.`} Cada ${UNID} exatamente assim (três linhas, nada mais):
+Só a lista ${repMode?"REPORTAGENS ESPECIAIS":"CORTES"}, sem instruções de edição. ${golMode?`Neste programa os cortes são EXCLUSIVAMENTE os gols do Flamengo, filmados pela câmera da FlamengoTV e com a narração do João Guilherme: um corte por gol, na ordem em que saíram no jogo, e nada mais (nenhuma cena de vestiário, comissão ou atleta vira corte). Localize cada gol pela narração ("gol", "golaço", o nome de quem marcou); a quantidade de cortes é a quantidade de gols do Flamengo no jogo. O corte começa na construção da jogada e termina na comemoração; o hook é o grito de gol. Se a transcrição não deixar localizar nenhum gol, escreva só a linha "Gols não localizados na transcrição: o editor marca pela imagem" e nada mais neste bloco.`:repMode?`Neste programa NÃO há cortes de trechos. Liste TODAS as matérias do episódio, sem exceção: cada bloco fechado do programa, com início, meio e fim (reportagem, entrevista, bastidor ou nota com personagem ou assunto próprio). Um episódio costuma ter de 4 a 8. Numere na ORDEM em que aparecem no episódio (#1 é a primeira que vai ao ar), cada uma do primeiro ao último segundo dela, para o editor cortar todas separadamente; fique de fora só a abertura, as vinhetas, as passagens da apresentadora entre uma matéria e outra e o encerramento. A reportagem especial será escolhida depois entre elas, então todas precisam estar completas.`:`De ${Math.min(3,maxCortes-1)} a ${maxCortes} cortes, do mais forte ao mais fraco.`} Cada ${UNID} exatamente assim (três linhas, nada mais):
 #N · [mm:ss–mm:ss] · ~X${repMode?"min · Reportagem: título curto":"s"} · Formato: ${fmtEditor}
 Hook${repMode?" do Shorts":""}: [mm:ss–mm:ss] · "frase literal do hook"
 ${/X,? (versão )?horizontal|X 16:9|horizontal 16:9/i.test(p.crono||"")?`Formato por ${UNID}: vertical 9:16 para Shorts, Reels, TikTok, Facebook e Threads; horizontal 16:9 para o X${repMode?" e para o VOD avulso no YouTube":""}. Pelo cronograma deste programa (${p.crono}), ${repMode?"cada reportagem sai nos dois formatos":"o(s) corte(s) que vão para o X saem nos dois formatos; os demais só em 9:16"}. Na linha Formato de cada ${UNID}, escreva só o que vale para ele${repMode?"a":""}.`:""}
@@ -664,7 +681,7 @@ ${redesEpisodio?`Em seguida, a linha EPISÓDIO COMPLETO, sozinha, e os textos pa
 ${redesEpisodio}`:""}
 ${redesD1?`Por fim, a linha DIA SEGUINTE, sozinha, e os textos do dia seguinte:
 ${redesD1}`:""}
-${golMode?"Um dos gols (o melhor) também é a chamada do episódio no Story, e o gol com a melhor narração é o que vai para a imprensa: na seção EPISÓDIO COMPLETO, indique na primeira linha qual corte (#N) é a chamada do Story e qual (#N) tem a melhor narração para a imprensa. Como não há apresentador, não existe chamada de véspera.":repMode?"Se o bloco PARA O EDITOR ficou sem reportagem especial, escreva aqui só os textos do episódio completo e do dia seguinte. Cada reportagem sai inteira: o VOD no YouTube recebe título e descrição próprios; o Shorts é o trecho-hook da reportagem.":""}
+${golMode?"Um dos gols (o melhor) também é a chamada do episódio no Story, e o gol com a melhor narração é o que vai para a imprensa: na seção EPISÓDIO COMPLETO, indique na primeira linha qual corte (#N) é a chamada do Story e qual (#N) tem a melhor narração para a imprensa. Como não há apresentador, não existe chamada de véspera.":repMode?"Escreva as legendas de TODAS as matérias listadas no bloco PARA O EDITOR, com o mesmo número (#N), uma por uma. A reportagem especial será escolhida depois entre elas: por isso, na linha \"Quando\" de cada uma, escreva \"se for a reportagem especial escolhida: \" seguido do dia e das redes do cronograma. Cada matéria sai inteira: o VOD no YouTube recebe título e descrição próprios; o Shorts é o trecho-hook da matéria.":""}
 
 ${contexto}`;
   const promptB=`${regras}
@@ -677,12 +694,13 @@ foto-NN-descricao-curta-sem-acento.jpg · [mm:ss] · quem deve aparecer e como �
 Como escolher o momento: a câmera costuma estar em quem está falando, então marque o MEIO de uma resposta longa (pelo menos 10 s depois de a pessoa começar a falar), nunca o instante da pergunta nem o início da resposta. A foto-01 é a capa: um momento de conversa com todos à mesa. As outras alternam o convidado sozinho e os apresentadores com ele; prefira momentos de riso, gesto ou emoção que a transcrição deixe ver. Use só tempos que existam na transcrição.
 
 === MATÉRIA PARA O SITE ===
-Padrão Abre Aspas (ge), para flamengo.com.br. Partes, com os rótulos em maiúsculas:
+${repMode?`NESTE PROGRAMA escreva UMA MATÉRIA PARA CADA matéria do episódio (cada bloco fechado do programa: reportagem, entrevista, bastidor ou nota com personagem ou assunto próprio; de fora só abertura, vinhetas, passagens da apresentadora e encerramento), na ORDEM em que aparecem no episódio. Antes de cada uma, uma linha exatamente assim: "--- MATÉRIA #N: título curto ---". Cada matéria trata SÓ daquele bloco, tem todas as partes abaixo e fica completa sozinha, porque só uma delas (a reportagem especial, escolhida depois) será publicada. No bloco FOTOS DA MATÉRIA, em vez de 4 a 5 fotos do episódio, liste uma foto de capa por matéria (foto-01 é a capa da matéria #1, foto-02 a da #2, e assim por diante) e escreva "capa da matéria #N" no fim da linha.
+`:""}Padrão Abre Aspas (ge), para flamengo.com.br. Partes, com os rótulos em maiúsculas:
 TÍTULO: institucional, sem aspa e sem dois-pontos, neste modelo: "No Em Nome do Jogo, na FlamengoTV, os jornalistas Rodrigo Capelo e Rodrigo Mattos falam sobre o endividamento dos clubes brasileiros". Ou seja: "No ${p.n}, na FlamengoTV, " + quem (profissão ou papel + nome completo de cada entrevistado) + "fala/falam sobre" + o tema do episódio em poucas palavras. Caixa normal (não escreva em maiúsculas).
 SUBTÍTULO: a linha de Abre Aspas: frase em terceira pessoa que resume o que a pessoa disse (quem + verbo + o quê), seguida de dois-pontos e de uma aspa literal curta (até 8 palavras) entre aspas. Como os nomes já estão no título, aqui a pessoa é nomeada pelo papel ("Jornalistas defendem…", "Ator relembra…", "Atacante diz…"). Regras: (a) a oração imediatamente antes dos dois-pontos é a que a aspa comenta; os outros assuntos do título vêm antes dela; (b) a frase traz o conteúdo e nunca repete nem antecipa as palavras da aspa; (c) nenhuma palavra que esteja dentro da aspa aparece no resto do título: se a aspa diz "Flamengo", o título usa "Rubro-Negro", "Mengão" ou "o clube". Exemplos de forma: Rui Costa diz que demitiria Crespo de novo e comenta o drama de Oscar: "Não morreu por milagre" / Hernanes critica futebol moderno e a falta de craques no Brasil: "Não tem espaço para o transgressor". Errado: Babu Santana coloca o Flamengo acima da Seleção Brasileira e propõe naturalizar Arrascaeta: "Vibro mais com o Flamengo" (a oração colada aos dois-pontos não é a que a aspa comenta, e repete "Flamengo"). Certo: Ator propõe naturalizar Arrascaeta e coloca o Rubro-Negro acima da Seleção Brasileira: "Vibro mais com o Flamengo".
 CAPA: o nome do arquivo da foto-01 da lista FOTOS DA MATÉRIA.
 [VÍDEO DA FLAMENGOTV]
-TEXTO: de 6 a 10 parágrafos corridos, sem rótulos internos, para quem NÃO viu o vídeo.${p.materia==="assinada"?" NESTE PROGRAMA a matéria é assinada pelo próprio apresentador ("+AP+"), como coluna dele no site: escreva em primeira pessoa, com a voz dele, sem aspas dele mesmo (as análises entram como texto corrido) e feche com a assinatura em linha própria: "+AP+", apresentador do "+p.n+", na FlamengoTV. O título institucional e o subtítulo continuam em terceira pessoa.":""} Uma linha em branco entre TODOS os parágrafos, aspas e marcas de foto incluídas (o editor do site só entende a quebra assim).
+TEXTO: ${repMode?"de 3 a 5":"de 6 a 10"} parágrafos corridos, sem rótulos internos, para quem NÃO viu o vídeo.${p.materia==="assinada"?" NESTE PROGRAMA a matéria é assinada pelo próprio apresentador ("+AP+"), como coluna dele no site: escreva em primeira pessoa, com a voz dele, sem aspas dele mesmo (as análises entram como texto corrido) e feche com a assinatura em linha própria: "+AP+", apresentador do "+p.n+", na FlamengoTV. O título institucional e o subtítulo continuam em terceira pessoa.":""} Uma linha em branco entre TODOS os parágrafos, aspas e marcas de foto incluídas (o editor do site só entende a quebra assim).
 - 1º parágrafo: apresenta a(s) pessoa(s) com nome completo e credencial na primeira menção (use a função informada no campo "Convidado ou personagem", ex.: "Rodrigo Capelo, sócio-diretor do Sport Insider, e Rodrigo Mattos, colunista do UOL"), diz o que elas acompanham ou representam e traz o dado ou fato central do episódio com a fonte nomeada por extenso ("Segundo o relatório da Agência X de 2025, …"). Sem data nem horário de publicação.
 - 2º parágrafo: abre com uma aspa curta entre aspas e, na mesma frase, diz quem resumiu assim, em conversa com quem, "no ${p.n}, programa da FlamengoTV, apresentado por ${AP}". É a única vez que o programa é citado no texto.
 - Depois, alternar parágrafo de contexto em terceira pessoa (2 a 4 frases, com os dados sempre atribuídos à fonte: "segundo o balanço da…") com aspa longa, assim:
@@ -719,8 +737,9 @@ ${contexto}`;
     textB=rB.text+(rB.truncated?"\n[matéria cortada pelo limite de tamanho: as perguntas e respostas podem estar incompletas]":""); monta();
     state.analyzed=true; showOutput(); salvaRascunho(); autoSalvar();
     // Etapas 2 e 3, automáticas: prints (a IA escolhe o frame; quem publica troca se precisar) e cards no Notion
-    if(mcp&&ytId(link)&&!state.fotosRodando){ $("genstatus").textContent="Gerando as capas e fotos (etapa 2 de 3)…"; await gerarFotos(); }
-    if(window.fluxoNotion&&!state.notion){ $("genstatus").textContent="Criando os cards no Notion (etapa 3 de 3)…"; await enviarNotion(); }
+    if(mcp&&ytId(link)&&!state.fotosRodando){ $("genstatus").textContent="Gerando as capas e fotos (etapa 2 de 4)…"; await gerarFotos(); }
+    if(window.fluxoNotion&&!state.notion&&p.cortes!=="reportagem"){ $("genstatus").textContent="Criando os cards no Notion (etapa 3 de 4)…"; await enviarNotion(); }
+    if(window.fluxoEntrega&&!state.entrega){ $("genstatus").textContent="Enviando a matéria e o texto da assessoria (etapa 4 de 4)…"; await enviarTextos(); }
     $("genstatus").textContent="Pronto. Processo concluído.";
   }catch(e){
     const c=e&&e.code;
@@ -898,7 +917,7 @@ $("momentos").addEventListener("click",e=>{
 });
 function escolhida(f){ return f.sel>=0&&f.cands&&f.cands[f.sel]?f.cands[f.sel]:(f.url?{url:f.url}:null); }
 // As fotos vão pelo .zip (nomes iguais aos da lista FOTOS DA MATÉRIA); o texto não recebe links.
-$("zipfotos").addEventListener("click", async ()=>{
+async function gerarZip(){
   const fotos=(state.fotos||[]).filter(f=>escolhida(f)&&escolhida(f).url&&escolhida(f).ts!==undefined);
   if(!fotos.length){ $("zipstatus").textContent="Nenhuma opção escolhida."; return; }
   state.zipRodando=true; renderGaleria();
@@ -911,11 +930,13 @@ $("zipfotos").addEventListener("click", async ()=>{
     $("zipstatus").innerHTML=`Pronto: <a href="${esc(done.zipUrl)}" target="_blank" rel="noopener">baixar fotos-${esc(slug())}.zip</a> (o link vale por alguns dias).`;
   }catch(e){ $("zipstatus").textContent="Não foi possível gerar o .zip: "+((e&&e.message)||"erro")+". Os links individuais continuam no bloco FOTOS GERADAS."; }
   state.zipRodando=false; $("zipfotos").disabled=false;
-});
+}
+$("zipfotos").addEventListener("click",gerarZip);
 // Matéria: copia também como HTML, com o entretítulo em h2 e cada pergunta em negrito, para colar no editor do site
 function materiaHTML(t){
   const lines=t.split("\n"); let pr=false; const out=[];
   lines.forEach(l=>{ const s=l.trim(); if(!s){ return; }
+    if(/^-{3,} .* -{3,}$/.test(s)){ pr=false; out.push(`<hr><h1>${esc(s.replace(/^-+\s*|\s*-+$/g,""))}</h1>`); return; } // FlaPress: uma matéria por bloco do episódio
     if(/^Leia mais d[ao] /.test(s)){ pr=true; out.push(`<h2>${esc(s)}</h2>`); return; }
     if(/^(CÓDIGO DE INCORPORAÇÃO|MINIATURA DO YOUTUBE)/.test(s)||/^<iframe/.test(s)){ out.push(`<p>${esc(s)}</p>`); return; }
     const resposta=/^["“–—-]/.test(s)||/^[^"“:]{2,60}:\s*["“]/.test(s)||/^\[confirmar/.test(s);
@@ -997,6 +1018,36 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
 }
 $("notionbtn").addEventListener("click",enviarNotion);
 
+// --- Etapa 4: a matéria vira Google Doc e o aviso vai por WhatsApp, com o .zip das fotos; o texto da assessoria vai junto quando a decisão é trabalhar imprensa
+const COM_MATERIA=["Em Nome do Jogo","Corre o Tempo no Olhar","Entrevista Exclusiva","Mengocast","Exposed Tático","Resenha do Galinho","FlaPress"]; // programas cujo cronograma prevê matéria no site
+async function enviarTextos(){
+  const EN=window.fluxoEntrega; if(!EN||!state.output||state.entregaRodando) return;
+  const eS=t=>{ $("entregastatus").textContent=t; }; state.entregaRodando=true;
+  const p=prog(), secs=sections(), nomeProg=p.n==="Mengocast"?"MengoCast":p.n, titulo=$("tema").value.trim()||nomeProg, link=$("link").value.trim();
+  const feito=[], falhou=[]; const ent={};
+  try{
+    const mat=COM_MATERIA.includes(p.n)?(secs["MATÉRIA PARA O SITE"]||"").trim():"";
+    if(mat){
+      eS("Matéria: criando o Google Doc…");
+      const html=`<html><head><meta charset="utf-8"></head><body><p style="color:#888888">${esc(nomeProg)} · ${esc(titulo)}${link?` · <a href="${esc(link)}">${esc(link)}</a>`:""}</p>${materiaHTML(mat)}</body></html>`;
+      const d=await EN.doc(`Matéria | ${nomeProg} | ${titulo}`,html); ent.doc=d.url; feito.push("matéria no Google Doc");
+      if(!state.zipUrl&&(state.fotos||[]).some(f=>escolhida(f)&&escolhida(f).url)){ eS("Matéria: gerando o .zip das fotos…"); await gerarZip(); }
+      eS("Matéria: avisando no WhatsApp…");
+      await EN.whatsapp(`*Matéria para revisão e publicação no site*\n${nomeProg} · ${titulo}\n\nTexto (Google Doc): ${d.url}${link?`\nEpisódio: ${link}`:""}${state.zipUrl?"\nFotos e capas: no .zip a seguir.":"\nFotos: não foi possível gerar o .zip; peça os prints."}`);
+      feito.push("aviso da matéria no WhatsApp");
+      if(state.zipUrl){ try{ await EN.whatsappZip(state.zipUrl,`fotos-${slug()}.zip`); feito.push(".zip das fotos no WhatsApp"); }catch(e){ falhou.push(e.message); } }
+    }
+    if(decisao().dec==="go"&&p.n!=="Memengo"){
+      eS("Assessoria: enviando o texto no WhatsApp…");
+      await EN.whatsapp(assessoria()); feito.push("texto da assessoria no WhatsApp"); ent.assessoria=true;
+    }
+    state.entrega=ent; salvaRascunho(); autoSalvar();
+    $("entregastatus").innerHTML=feito.length?`Enviado: ${esc(feito.join("; "))}.${ent.doc?` <a href="${esc(ent.doc)}" target="_blank" rel="noopener">Abrir o Doc</a>`:""}${falhou.length?`<br>Atenção: ${esc(falhou.join("; "))}.`:""}`:"";
+    if(!feito.length) eS("");
+  }catch(e){ eS(`Não foi possível concluir o envio: ${(e&&e.message)||"erro"}.${feito.length?" Já enviado: "+feito.join("; ")+".":""}`); }
+  state.entregaRodando=false;
+}
+
 // --- copy / clear
 $("copy").addEventListener("click",()=>copyText($("brief").textContent,"Copiado."));
 function toast(m){ $("toast").textContent=m; setTimeout(()=>{ if($("toast").textContent===m) $("toast").textContent=""; },3500); }
@@ -1005,7 +1056,7 @@ const DRAFT_KEY="fluxo-divulgacao-rascunho";
 function salvaRascunho(){
   try{
     const d={programa:selP.value,dataH:$("dataH").value,apresentadores:$("apresentadores").value,tema:$("tema").value,convidado:$("convidado").value,aspa:$("aspa").value,link:$("link").value,resumo:$("resumo").value.slice(0,120000),
-      ans:state.ans,output:(state.output||"").slice(0,120000),analyzed:!!state.analyzed,editing:state.editing||null,zipUrl:state.zipUrl||"",notion:state.notion||null,
+      ans:state.ans,output:(state.output||"").slice(0,120000),analyzed:!!state.analyzed,editing:state.editing||null,zipUrl:state.zipUrl||"",notion:state.notion||null,entrega:state.entrega||null,
       fotos:(state.fotos||[]).map(f=>({nome:f.nome,ts:f.ts,tipo:f.tipo,corte:f.corte||0,desc:f.desc||"",sel:f.sel,motivo:f.motivo||"",cands:(f.cands||[]).map(c=>({ts:c.ts,url:c.url,vurl:c.vurl||"",w:c.w,h:c.h,erro:c.erro||""}))})),t:Date.now()};
     localStorage.setItem(DRAFT_KEY,JSON.stringify(d));
   }catch(e){}
@@ -1016,7 +1067,7 @@ function restauraRascunho(){
   if(!d||!d.t||Date.now()-d.t>3*24*3600*1000) return false;
   if(!(d.tema||d.link||d.resumo||d.output)) return false;
   selP.value=d.programa||selP.value; $("dataH").value=d.dataH||""; $("apresentadores").value=d.apresentadores||prog().hosts; $("tema").value=d.tema||""; $("convidado").value=d.convidado||""; $("aspa").value=d.aspa||""; $("link").value=d.link||""; $("resumo").value=d.resumo||"";
-  state.ans={...(d.ans||{})}; state.output=d.output||""; state.analyzed=!!d.analyzed; state.editing=d.editing||null; state.zipUrl=d.zipUrl||""; state.notion=d.notion||null;
+  state.ans={...(d.ans||{})}; state.output=d.output||""; state.analyzed=!!d.analyzed; state.editing=d.editing||null; state.zipUrl=d.zipUrl||""; state.notion=d.notion||null; state.entrega=d.entrega||null;
   state.fotos=Array.isArray(d.fotos)?d.fotos.map(f=>({...f,cands:(f.cands||[]).map(c=>({...c,thumb:""}))})):[];
   qs.querySelectorAll("button[data-k]").forEach(b=>{ const v=!!state.ans[b.dataset.k]; b.setAttribute("aria-pressed",(b.dataset.v==="1")===v?"true":"false"); });
   if(state.output) showOutput(); renderGaleria();
@@ -1026,7 +1077,7 @@ function restauraRascunho(){
 ["programa","apresentadores","convidado","aspa","link","resumo"].forEach(id=>$(id).addEventListener("input",()=>salvaRascunho()));
 function clearForm(){
   limpaRascunho();
-  state.ans={}; state.editing=null; state.output=""; state.analyzed=false; state.fotos=[]; state.zipUrl=""; state.notion=null; $("fotostatus").textContent=""; $("zipstatus").textContent=""; $("notionstatus").textContent=""; renderGaleria();
+  state.ans={}; state.editing=null; state.output=""; state.analyzed=false; state.fotos=[]; state.zipUrl=""; state.notion=null; state.entrega=null; $("entregastatus").textContent=""; $("fotostatus").textContent=""; $("zipstatus").textContent=""; $("notionstatus").textContent=""; renderGaleria();
   qs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed","false"));
   ["dataH","tema","convidado","aspa","link","resumo"].forEach(id=>$(id).value="");
   $("apresentadores").value=prog().hosts; $("filestat").textContent=""; $("genstatus").textContent="";
@@ -1041,7 +1092,7 @@ const mem=[];
 function docBody(){
   return {programa:selP.value, dataH:$("dataH").value, apresentadores:$("apresentadores").value.trim(), tema:$("tema").value.trim(), convidado:$("convidado").value.trim(),
     aspa:$("aspa").value.trim(), link:$("link").value.trim(), resumo:$("resumo").value.trim().slice(0,60000),
-    release:(state.output||"").slice(0,60000), fotos:(state.fotos||[]).map(f=>{ const c=escolhida(f); return {nome:f.nome,ts:f.ts,url:(c&&c.url)||"",tipo:f.tipo||"",corte:f.corte||0,desc:f.desc||""}; }), zipUrl:state.zipUrl||"", notion:state.notion||null, ans:{...state.ans},
+    release:(state.output||"").slice(0,60000), fotos:(state.fotos||[]).map(f=>{ const c=escolhida(f); return {nome:f.nome,ts:f.ts,url:(c&&c.url)||"",tipo:f.tipo||"",corte:f.corte||0,desc:f.desc||""}; }), zipUrl:state.zipUrl||"", notion:state.notion||null, entrega:state.entrega||null, ans:{...state.ans},
     por:uid||"", savedAt:new Date().toISOString()};
 }
 // Salvamento automático: o episódio entra no histórico ao fim da análise e o mesmo registro é atualizado a cada mudança (uma gravação por vez, para não duplicar)
@@ -1066,7 +1117,7 @@ async function salvar(){
   salvaRascunho();
 }
 function loadInto(r){
-  state.editing=r.id; state.ans={...(r.ans||{})}; state.output=r.release||""; state.analyzed=!!r.release; state.fotos=Array.isArray(r.fotos)?r.fotos.map(f=>({...f,cands:[],sel:-1})):[]; state.zipUrl=r.zipUrl||""; state.notion=r.notion||null; $("notionstatus").textContent=state.notion?`Cards deste episódio já enviados ao Notion (${state.notion.length}).`:""; $("fotostatus").textContent=""; $("zipstatus").textContent=""; renderGaleria();
+  state.editing=r.id; state.ans={...(r.ans||{})}; state.output=r.release||""; state.analyzed=!!r.release; state.fotos=Array.isArray(r.fotos)?r.fotos.map(f=>({...f,cands:[],sel:-1})):[]; state.zipUrl=r.zipUrl||""; state.entrega=r.entrega||null; $("entregastatus").textContent=state.entrega?"Matéria e texto da assessoria deste episódio já enviados.":""; state.notion=r.notion||null; $("notionstatus").textContent=state.notion?`Cards deste episódio já enviados ao Notion (${state.notion.length}).`:""; $("fotostatus").textContent=""; $("zipstatus").textContent=""; renderGaleria();
   selP.value=r.programa; $("dataH").value=r.dataH||""; $("apresentadores").value=r.apresentadores||prog().hosts; $("tema").value=r.tema||""; $("convidado").value=r.convidado||""; $("aspa").value=r.aspa||""; $("link").value=r.link||""; $("resumo").value=r.resumo||"";
   qs.querySelectorAll("button[data-k]").forEach(b=>{ const v=!!state.ans[b.dataset.k]; b.setAttribute("aria-pressed", (b.dataset.v==="1")===v?"true":"false"); });
   if(state.output) showOutput(); else { $("brief").innerHTML='<span class="placeholder">Clique em Analisar episódio para gerar a matéria.</span>'; $("copy").disabled=true; }

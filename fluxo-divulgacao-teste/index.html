@@ -217,7 +217,8 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
     try{ r=await fetch(HOOK,{method:"POST",body:new URLSearchParams({code,...fields}),signal}); }
     catch(e){ if(e&&e.name==="AbortError") throw erro("aborted","cancelado"); throw erro("upstream_error","sem resposta do servidor (a operação pode ter passado do tempo limite)"); }
     const text=await r.text(); let json; try{ json=JSON.parse(text); }catch(e){}
-    if(r.status===401) { try{ localStorage.removeItem(LS); }catch(e){} throw erro("not_granted","código de acesso inválido; recarregue a página"); }
+    if(r.status===401&&json&&json.error==="codigo") { try{ localStorage.removeItem(LS); }catch(e){} throw erro("not_granted","código de acesso inválido; recarregue a página"); }
+    if(r.status===401&&fields.action&&/^apify/.test(fields.action)) throw erro("tool_error","o Apify recusou a chave de acesso configurada no Make (chave inválida ou trocada); avise quem administra a ferramenta");
     return {status:r.status,text,json};
   }
   // ---- acesso: código da equipe + nome de quem está usando

@@ -335,6 +335,7 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
   const RESPONSAVEIS=["358d872b-594c-8167-8b31-0002576c2953","3d8d872b-594c-81a8-ab6c-0002d0f6e42c"]; // Rafael de Souza Correa, Santa
   const PUBLICA=["37cd872b-594c-81ca-9ae5-0002346e3eb9"]; // Marcel Baião Bely
   const STATUS_PREFERIDO="Rafa Edits", STATUS_RESERVA="Backlog";
+  const TESTE=/[?&]teste=1\b/.test(location.search); // modo teste: título marcado e ninguém atribuído (ninguém é notificado)
   const code=()=>{ try{ return (JSON.parse(localStorage.getItem("fluxo-divulgacao-acesso")||"{}").code)||""; }catch(e){ return ""; } };
   async function N(action,fields){
     const r=await fetch(HOOK_N,{method:"POST",body:new URLSearchParams({code:code(),action,...fields})});
@@ -370,13 +371,13 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
     const m=await meta(); const agora=new Date();
     const dp=/T/.test(card.dataPostagem)?card.dataPostagem.slice(0,16)+":00-03:00":card.dataPostagem;
     const page=await post("pages",{parent:{database_id:DB},icon:{type:"emoji",emoji:card.icone||"📺"},properties:{
-      "Nome":{title:rich(card.titulo).slice(0,1)},
+      "Nome":{title:rich((TESTE?"TESTE · ":"")+card.titulo).slice(0,1)},
       "Status":{status:{name:m.status}},
       "Data Solicitação":{date:{start:br(agora).slice(0,10)}},
       "Deadline":{date:{start:br(new Date(agora.getTime()+2*3600e3)).slice(0,16)+":00-03:00"}},
       "Data Postagem":{date:{start:dp}},
-      "Responsável":{people:RESPONSAVEIS.map(id=>({id}))},
-      "Publica!":{people:PUBLICA.map(id=>({id}))},
+      "Responsável":{people:TESTE?[]:RESPONSAVEIS.map(id=>({id}))},
+      "Publica!":{people:TESTE?[]:PUBLICA.map(id=>({id}))},
       "Área":ms(card.areas),"Entregáveis":ms([card.entregavel]),"Qntd Peças":{number:card.pecas||1},
       "Esporte":ms(card.esporte),"Uso de I.A":{select:{name:"Sim"}},"Marca Envolvida":ms(card.marca),
       "Rede Social":ms(card.redes),"Postado?":{select:{name:"Não Postado!"}},"Pauta":ms([card.pauta]),
@@ -402,9 +403,10 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
     if(r.status>=400||!j) throw new Error(oque+" falhou ("+r.status+")");
     return j;
   }
+  const TESTE=/[?&]teste=1\b/.test(location.search);
   window.fluxoEntrega={
-    doc:(nome,html)=>E("doc",{name:nome,html},"a criação do Google Doc"),
-    whatsapp:texto=>E("wa_text",{text:texto},"o envio no WhatsApp"),
+    doc:(nome,html)=>E("doc",{name:(TESTE?"TESTE · ":"")+nome,html},"a criação do Google Doc"),
+    whatsapp:texto=>E("wa_text",{text:(TESTE?"[TESTE]\n":"")+texto},"o envio no WhatsApp"),
     whatsappZip:(url,nome)=>E("wa_doc",{url,name:nome},"o envio do .zip no WhatsApp")
   };
 })();

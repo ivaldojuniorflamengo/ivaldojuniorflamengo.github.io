@@ -162,6 +162,11 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
         <button class="btn" id="notionbtn" hidden disabled>Enviar ao Notion</button>
         <button class="btn ghost" id="clear">Limpar</button>
       </div>
+      <div id="repbox" hidden style="margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:8px">
+        <label for="repsel" style="display:block;font-weight:700;margin-bottom:6px">Reportagem especial do episódio</label>
+        <div class="note" style="margin:0 0 8px">Nada do FlaPress é enviado sozinho. Escolha a matéria que vira a reportagem especial: só ela vai para o Notion, para o site (Google Doc) e para a assessoria.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><select id="repsel" style="flex:1;min-width:220px"></select><button class="btn primary" id="repbtn" type="button">Enviar a reportagem especial</button></div>
+      </div>
       <div class="status" id="fotostatus"></div>
       <div class="status" id="notionstatus"></div>
       <div class="status" id="entregastatus"></div>
@@ -739,8 +744,8 @@ ${contexto}`;
     // Etapas 2 e 3, automáticas: prints (a IA escolhe o frame; quem publica troca se precisar) e cards no Notion
     if(mcp&&ytId(link)&&!state.fotosRodando){ $("genstatus").textContent="Gerando as capas e fotos (etapa 2 de 4)…"; await gerarFotos(); }
     if(window.fluxoNotion&&!state.notion&&p.cortes!=="reportagem"){ $("genstatus").textContent="Criando os cards no Notion (etapa 3 de 4)…"; await enviarNotion(); }
-    if(window.fluxoEntrega&&!state.entrega){ $("genstatus").textContent="Enviando a matéria e o texto da assessoria (etapa 4 de 4)…"; await enviarTextos(); }
-    $("genstatus").textContent="Pronto. Processo concluído.";
+    if(window.fluxoEntrega&&!state.entrega&&p.cortes!=="reportagem"){ $("genstatus").textContent="Enviando a matéria e o texto da assessoria (etapa 4 de 4)…"; await enviarTextos(); }
+    $("genstatus").textContent=p.cortes==="reportagem"&&(window.fluxoNotion||window.fluxoEntrega)?"Pronto. Escolha a reportagem especial abaixo para enviar.":"Pronto. Processo concluído.";
   }catch(e){
     const c=e&&e.code;
     if(c==="cancelled"||c==="aborted"){ $("genstatus").textContent="Cancelado."; }
@@ -788,7 +793,10 @@ function showOutput(){
   if(state.output){ const btn=document.createElement("button"); btn.className="btn"; btn.textContent="Copiar: Assessoria de imprensa"; btn.addEventListener("click",()=>copyText(assessoria(),"Resposta para a assessoria copiada.")); b.appendChild(btn); }
   b.hidden=!b.children.length;
   $("dled").disabled=!(downloadsFn&&secs["PARA O EDITOR"]);
-  $("notionbtn").hidden=!window.fluxoNotion; $("notionbtn").disabled=!(state.analyzed&&secs["PARA QUEM PUBLICA"])||!!state.notionRodando; $("notionbtn").textContent=state.notion?"Enviar de novo ao Notion":"Enviar ao Notion";
+  const repM=prog().cortes==="reportagem"; $("notionbtn").hidden=!window.fluxoNotion||repM;
+  { const rs=repM&&state.analyzed&&(window.fluxoNotion||window.fluxoEntrega)?reportagens():[]; $("repbox").hidden=!rs.length; const atual=$("repsel").value;
+    if(rs.length&&$("repsel").dataset.sig!==JSON.stringify(rs)){ $("repsel").innerHTML=rs.map(r=>`<option value="${r.n}">#${r.n} · ${esc(r.titulo)}</option>`).join(""); $("repsel").dataset.sig=JSON.stringify(rs); if(atual) $("repsel").value=atual; }
+    $("repbtn").disabled=!!(state.notionRodando||state.entregaRodando); } $("notionbtn").disabled=!(state.analyzed&&secs["PARA QUEM PUBLICA"])||!!state.notionRodando; $("notionbtn").textContent=state.notion?"Enviar de novo ao Notion":"Enviar ao Notion";
   $("fotos").disabled=!(mcp&&(secs["FOTOS DA MATÉRIA"]||secs["PARA O EDITOR"])&&ytId($("link").value)&&!state.fotosRodando);
 }
 
@@ -917,8 +925,8 @@ $("momentos").addEventListener("click",e=>{
 });
 function escolhida(f){ return f.sel>=0&&f.cands&&f.cands[f.sel]?f.cands[f.sel]:(f.url?{url:f.url}:null); }
 // As fotos vão pelo .zip (nomes iguais aos da lista FOTOS DA MATÉRIA); o texto não recebe links.
-async function gerarZip(){
-  const fotos=(state.fotos||[]).filter(f=>escolhida(f)&&escolhida(f).url&&escolhida(f).ts!==undefined);
+async function gerarZip(filtro){
+  const fotos=(state.fotos||[]).filter(f=>(typeof filtro!=="function"||filtro(f))&&escolhida(f)&&escolhida(f).url&&escolhida(f).ts!==undefined);
   if(!fotos.length){ $("zipstatus").textContent="Nenhuma opção escolhida."; return; }
   state.zipRodando=true; renderGaleria();
   try{
@@ -931,7 +939,7 @@ async function gerarZip(){
   }catch(e){ $("zipstatus").textContent="Não foi possível gerar o .zip: "+((e&&e.message)||"erro")+". Os links individuais continuam no bloco FOTOS GERADAS."; }
   state.zipRodando=false; $("zipfotos").disabled=false;
 }
-$("zipfotos").addEventListener("click",gerarZip);
+$("zipfotos").addEventListener("click",()=>gerarZip());
 // Matéria: copia também como HTML, com o entretítulo em h2 e cada pergunta em negrito, para colar no editor do site
 function materiaHTML(t){
   const lines=t.split("\n"); let pr=false; const out=[];
@@ -968,13 +976,18 @@ $("dled").addEventListener("click",()=>baixar(`editor-${slug()}.txt`,pacoteEdito
 const ICONES={"Memengo":"🤡","Exposed Tático":"🧠","Resenha do Galinho":"🐓","FlaPress":"📰","Corre o Tempo no Olhar":"👀","Isso Aqui É Flamengo":"🎙️","Em Nome do Jogo":"📊","Vlog no Maraca":"🏟️","Entrevista Exclusiva":"🫂","Mengocast":"🎤"};
 const ENTREGAVEL={"9x16":"Vertical | 1080 x 1920 | Vídeo","16x9":"Horizontal | 1920 x 1080 | Vídeo","carrossel":"Feed Expandido | 1080 x 1440 | Estático"};
 function nStatus(t){ $("notionstatus").textContent=t; }
-async function enviarNotion(){
-  const NT=window.fluxoNotion; const secs=sections(); const pub=secs["PARA QUEM PUBLICA"]||"";
+// FlaPress: as matérias do episódio (do bloco do editor) e o pedaço de cada bloco que pertence à matéria #N
+function reportagens(){ return (sections()["PARA O EDITOR"]||"").split("\n").map(l=>l.match(/^#(\d+)\s*·.*?(?:Reportagem|Matéria):\s*(.+?)(?:\s*·\s*Formato:.*)?$/i)).filter(Boolean).map(m=>({n:+m[1],titulo:m[2].trim()})); }
+function trechoN(bloco,n){ const L=bloco.split("\n"); const i=L.findIndex(l=>new RegExp("^#"+n+"\\b").test(l.trim())); if(i<0) return ""; let j=i+1; while(j<L.length&&!/^#\d+\b/.test(L[j].trim())&&!/^(EPISÓDIO COMPLETO|DIA SEGUINTE)\s*$/.test(L[j].trim())) j++; return L.slice(i,j).join("\n").trim(); }
+function materiaN(n){ const t=sections()["MATÉRIA PARA O SITE"]||""; const partes=t.split(/^(?=-{3,}\s*MATÉRIA #\d+)/m); const p=partes.find(x=>new RegExp("^-{3,}\\s*MATÉRIA #"+n+"\\b").test(x.trim())); return p?p.trim():""; }
+async function enviarNotion(soN){
+  soN=typeof soN==="number"?soN:0;
+  const NT=window.fluxoNotion; const secs=sections(); const pub=soN?trechoN(secs["PARA QUEM PUBLICA"]||"",soN):(secs["PARA QUEM PUBLICA"]||"");
   if(!NT||!sampleFn||!pub||state.notionRodando) return;
   state.notionRodando=true; showOutput();
   try{
     nStatus("Notion: lendo as opções da base…");
-    const meta=await NT.meta(); const p=prog(); const nomeProg=p.n==="Mengocast"?"MengoCast":p.n; const titulo=$("tema").value.trim()||nomeProg;
+    const meta=await NT.meta(); const p=prog(); const nomeProg=p.n==="Mengocast"?"MengoCast":p.n; const repT=soN?(reportagens().find(r=>r.n===soN)||{}).titulo:""; const titulo=repT||$("tema").value.trim()||nomeProg;
     const H=$("dataH").value||""; const hoje=new Date(Date.now()-3*3600e3).toISOString().slice(0,16);
     nStatus("Notion: montando os cards…");
     const plano=await sampleFn.json(`Você prepara os cards do Notion da equipe de redes do Flamengo a partir do bloco abaixo: os cortes de um episódio da FlamengoTV, com o "Quando" (dia e redes) e as legendas por rede. Responda SÓ com um JSON, sem texto antes ou depois.
@@ -1001,10 +1014,10 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
     const dataOk=d=>/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(String(d||""))?d:(H||hoje).slice(0,10);
     const txt=pacoteEditor(); const feitos=[];
     for(let i=0;i<lista.length;i++){
-      const c=lista[i]; const n=+c.corte||i+1; const car=c.formato==="carrossel";
+      const c=lista[i]; const n=soN||+c.corte||i+1; const car=c.formato==="carrossel";
       nStatus(`Notion: criando o card ${i+1} de ${lista.length}…`);
       const foto=(state.fotos||[]).find(f=>f.tipo==="corte"&&f.corte===n); const esc9=foto&&escolhida(foto);
-      feitos.push(await NT.criar({titulo:car?`CARROSSEL DE ASPAS | ${nomeProg} | ${titulo}`:`CORTE #${n}${c.formato==="16x9"?" (16x9)":""} | ${nomeProg} | ${titulo}`,
+      feitos.push(await NT.criar({titulo:car?`CARROSSEL DE ASPAS | ${nomeProg} | ${titulo}`:soN?`REPORTAGEM ESPECIAL${c.formato==="16x9"?" (16x9)":""} | ${nomeProg} | ${titulo}`:`CORTE #${n}${c.formato==="16x9"?" (16x9)":""} | ${nomeProg} | ${titulo}`,
         icone:ICONES[p.n],dataPostagem:dataOk(c.data),areas,entregavel:ENTREGAVEL[c.formato],pecas:car?Math.max(1,+c.laminas||1):1,esporte,marca,
         redes:so(c.redes,meta.rede,"Sem Rede Social"),pauta:nomeProg,hashtags:hashtags(p).split(" "),porque:c.porque,legenda:c.legenda,
         querCapa:c.formato==="9x16",capaUrl:c.formato==="9x16"&&esc9&&esc9.vurl?esc9.vurl:"",capaNome:`capa-corte-${String(n).padStart(2,"0")}-9x16.jpg`,
@@ -1016,22 +1029,28 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
   }catch(e){ nStatus("Não foi possível criar os cards no Notion: "+((e&&e.message)||"erro")+". Tente de novo pelo botão “Enviar ao Notion”."); }
   state.notionRodando=false; showOutput();
 }
-$("notionbtn").addEventListener("click",enviarNotion);
+$("notionbtn").addEventListener("click",()=>enviarNotion());
+$("repbtn").addEventListener("click",async()=>{ const n=+$("repsel").value; if(!n) return; $("repbtn").disabled=true;
+  if(window.fluxoNotion) await enviarNotion(n); if(window.fluxoEntrega) await enviarTextos(n);
+  state.repEscolhida=n; showOutput(); });
 
 // --- Etapa 4: a matéria vira Google Doc e o aviso vai por WhatsApp, com o .zip das fotos; o texto da assessoria vai junto quando a decisão é trabalhar imprensa
 const COM_MATERIA=["Em Nome do Jogo","Corre o Tempo no Olhar","Entrevista Exclusiva","Mengocast","Exposed Tático","Resenha do Galinho","FlaPress"]; // programas cujo cronograma prevê matéria no site
-async function enviarTextos(){
+async function enviarTextos(soN){
+  soN=typeof soN==="number"?soN:0;
   const EN=window.fluxoEntrega; if(!EN||!state.output||state.entregaRodando) return;
   const eS=t=>{ $("entregastatus").textContent=t; }; state.entregaRodando=true;
-  const p=prog(), secs=sections(), nomeProg=p.n==="Mengocast"?"MengoCast":p.n, titulo=$("tema").value.trim()||nomeProg, link=$("link").value.trim();
+  const p=prog(), secs=sections(), nomeProg=p.n==="Mengocast"?"MengoCast":p.n, titulo=(soN&&(reportagens().find(r=>r.n===soN)||{}).titulo)||$("tema").value.trim()||nomeProg, link=$("link").value.trim();
   const feito=[], falhou=[]; const ent={};
   try{
-    const mat=COM_MATERIA.includes(p.n)?(secs["MATÉRIA PARA O SITE"]||"").trim():"";
+    const mat=!COM_MATERIA.includes(p.n)?"":soN?materiaN(soN):(secs["MATÉRIA PARA O SITE"]||"").trim();
+    const doZip=f=>!soN||f.corte===soN||new RegExp("^foto-0*"+soN+"\\b").test(f.nome||"");
     if(mat){
       eS("Matéria: criando o Google Doc…");
       const html=`<html><head><meta charset="utf-8"></head><body><p style="color:#888888">${esc(nomeProg)} · ${esc(titulo)}${link?` · <a href="${esc(link)}">${esc(link)}</a>`:""}</p>${materiaHTML(mat)}</body></html>`;
       const d=await EN.doc(`Matéria | ${nomeProg} | ${titulo}`,html); ent.doc=d.url; feito.push("matéria no Google Doc");
-      if(!state.zipUrl&&(state.fotos||[]).some(f=>escolhida(f)&&escolhida(f).url)){ eS("Matéria: gerando o .zip das fotos…"); await gerarZip(); }
+      if(soN) state.zipUrl="";
+      if(!state.zipUrl&&(state.fotos||[]).some(f=>doZip(f)&&escolhida(f)&&escolhida(f).url)){ eS("Matéria: gerando o .zip das fotos…"); await gerarZip(soN?doZip:null); }
       eS("Matéria: avisando no WhatsApp…");
       await EN.whatsapp(`*Matéria para revisão e publicação no site*\n${nomeProg} · ${titulo}\n\nTexto (Google Doc): ${d.url}${link?`\nEpisódio: ${link}`:""}${state.zipUrl?"\nFotos e capas: no .zip a seguir.":"\nFotos: não foi possível gerar o .zip; peça os prints."}`);
       feito.push("aviso da matéria no WhatsApp");

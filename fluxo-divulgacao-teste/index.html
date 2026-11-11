@@ -444,7 +444,7 @@ const REDES={
   whatsapp:{n:"Canal do WhatsApp",video:false,fmt:"H",campos:"mensagem de até 3 linhas, com o link no fim"},
   ytpost:{n:"YouTube Publicações",video:false,fmt:"H",campos:"texto de até 2 linhas + link do episódio"},
   xlink:{n:"X (link do episódio)",video:false,fmt:"H",campos:"texto até 280 caracteres com o link do episódio no fim"},
-  carrossel:{n:"Carrossel de aspas (Instagram + Facebook, no dia seguinte)",video:false,d1:true,campos:"5 a 8 aspas curtas do episódio, uma por card (até 120 caracteres cada, literais, com o nome de quem disse) + legenda de até 3 linhas citando o programa e a FlamengoTV"},
+  carrossel:{n:"Carrossel de aspas (Instagram + Facebook, no dia seguinte)",video:false,d1:true,campos:"de 4 a 6 cards, numerados (Card 1, Card 2…), cada um com UMA aspa literal do episódio e o nome de quem disse. Como escolher: cada aspa é uma frase completa, com sujeito e verbo, que alguém que NÃO viu o episódio entende sozinha, sem depender da pergunta nem da frase anterior, e que diz algo (uma revelação, uma opinião, uma história, um número); nunca um pedaço de frase, uma frase que começa com 'e', 'mas', 'então' ou 'isso', uma resposta curta a uma pergunta que não está no card, nem uma brincadeira que só faz sentido no contexto. Até 140 caracteres; se a frase forte for maior, corte no fim de uma oração, sem mudar o sentido, em vez de escolher uma frase fraca. O Card 1 é a aspa mais forte, a que faz a pessoa passar para o próximo; os demais seguem a ordem do episódio e cada um trata de um assunto diferente. Se o episódio só tem 4 aspas boas, faça 4: não complete com frase fraca. Depois dos cards, a legenda de até 3 linhas citando o programa e a FlamengoTV"},
 };
 // Resumo das redes do programa, para o cabeçalho (padrão definido na apresentação de cada programa)
 function redesResumo(p){
@@ -539,7 +539,7 @@ function saidaCompleta(){
   const t=["MENSAGEM PARA O GRUPO DE IMPRENSA","POTENCIAL DE MANCHETE","ESPORTE OLÍMPICO"].reduce((a,n)=>tiraSecao(a,n),state.output);
   return t+"\n\n=== PARA A ASSESSORIA DE IMPRENSA ===\n"+assessoria();
 }
-function assessoria(){
+function assessoria(partes){
   const d=decisao(), p=d.p, secs=sections();
   const yes=QS.filter(q=>state.ans[q.k]).map(q=>q.t);
   const L=[`RESPOSTA PARA A ASSESSORIA DE IMPRENSA — ${p.n}`,
@@ -555,7 +555,12 @@ function assessoria(){
   if(pm.length) L.splice(L.indexOf("O que fazer:"),0,`Potencial de manchete (avaliação da IA): ${/^\W*sim/i.test(pm[0])?"Sim":"Não"}${pm[1]?" — "+pm[1]:""}`);
   const ol=(secs["ESPORTE OLÍMPICO"]||"").split("\n").map(x=>x.trim()).filter(Boolean), olimpico=ol.length>0&&/^\W*sim/i.test(ol[0]);
   if(d.dec==="go"&&p.n!=="Memengo") L.push("","GRUPOS DE WHATSAPP PARA ENVIO:",...gruposDe(p.seg+(olimpico?" + OLÍMPICOS":"")),`POR QUE ESSES GRUPOS: ${p.why}${olimpico?" O episódio envolve esporte olímpico do Flamengo"+(ol[1]?" ("+ol[1].replace(/\.$/,"")+")":"")+": vai também para o grupo de imprensa de olímpicos.":""}`,`COMO VIRA NOTÍCIA: ${p.ang}`);
-  if(d.dec!=="no"&&secs["MENSAGEM PARA O GRUPO DE IMPRENSA"]) L.push("","MENSAGEM PARA O GRUPO DE IMPRENSA",secs["MENSAGEM PARA O GRUPO DE IMPRENSA"]);
+  const msg=d.dec!=="no"?(secs["MENSAGEM PARA O GRUPO DE IMPRENSA"]||"").trim():"";
+  if(partes){ // WhatsApp: a decisão com uma linha em branco entre os blocos; a mensagem para a imprensa vai separada, pronta para copiar
+    const out=[]; L.filter(x=>x.trim()).forEach((x,i)=>{ if(i&&!x.startsWith("- ")) out.push(""); out.push(i===0?`*${x}*`:x); });
+    return {decisao:out.join("\n"),mensagem:msg};
+  }
+  if(msg) L.push("","MENSAGEM PARA O GRUPO DE IMPRENSA",msg);
   return L.join("\n");
 }
 
@@ -704,6 +709,7 @@ Como escolher o momento: a câmera costuma estar em quem está falando, então m
 ${repMode?`NESTE PROGRAMA escreva UMA MATÉRIA PARA CADA matéria do episódio (cada bloco fechado do programa: reportagem, entrevista, bastidor ou nota com personagem ou assunto próprio; de fora só abertura, vinhetas, passagens da apresentadora e encerramento), na ORDEM em que aparecem no episódio. Antes de cada uma, uma linha exatamente assim: "--- MATÉRIA #N: título curto ---". Cada matéria trata SÓ daquele bloco, tem todas as partes abaixo e fica completa sozinha, porque só uma delas (a reportagem especial, escolhida depois) será publicada. No bloco FOTOS DA MATÉRIA, em vez de 4 a 5 fotos do episódio, liste uma foto de capa por matéria (foto-01 é a capa da matéria #1, foto-02 a da #2, e assim por diante) e escreva "capa da matéria #N" no fim da linha.
 `:""}Padrão Abre Aspas (ge), para flamengo.com.br. Partes, com os rótulos em maiúsculas:
 TÍTULO: institucional, sem aspa e sem dois-pontos, neste modelo: "No Em Nome do Jogo, na FlamengoTV, os jornalistas Rodrigo Capelo e Rodrigo Mattos falam sobre o endividamento dos clubes brasileiros". Ou seja: "No ${p.n}, na FlamengoTV, " + quem (profissão ou papel + nome completo de cada entrevistado) + "fala/falam sobre" + o tema do episódio em poucas palavras. Caixa normal (não escreva em maiúsculas).
+TÍTULO DE DESTAQUE: versão reduzida do TÍTULO, só para a home do site: no máximo 60 caracteres contando os espaços (conte antes de escrever), sem aspas e sem ponto final, com o nome de quem fala e o assunto (ex.: "Capelo e Mattos analisam o endividamento dos clubes").
 SUBTÍTULO: a linha de Abre Aspas: frase em terceira pessoa que resume o que a pessoa disse (quem + verbo + o quê), seguida de dois-pontos e de uma aspa literal curta (até 8 palavras) entre aspas. Como os nomes já estão no título, aqui a pessoa é nomeada pelo papel ("Jornalistas defendem…", "Ator relembra…", "Atacante diz…"). Regras: (a) a oração imediatamente antes dos dois-pontos é a que a aspa comenta; os outros assuntos do título vêm antes dela; (b) a frase traz o conteúdo e nunca repete nem antecipa as palavras da aspa; (c) nenhuma palavra que esteja dentro da aspa aparece no resto do título: se a aspa diz "Flamengo", o título usa "Rubro-Negro", "Mengão" ou "o clube". Exemplos de forma: Rui Costa diz que demitiria Crespo de novo e comenta o drama de Oscar: "Não morreu por milagre" / Hernanes critica futebol moderno e a falta de craques no Brasil: "Não tem espaço para o transgressor". Errado: Babu Santana coloca o Flamengo acima da Seleção Brasileira e propõe naturalizar Arrascaeta: "Vibro mais com o Flamengo" (a oração colada aos dois-pontos não é a que a aspa comenta, e repete "Flamengo"). Certo: Ator propõe naturalizar Arrascaeta e coloca o Rubro-Negro acima da Seleção Brasileira: "Vibro mais com o Flamengo".
 CAPA: o nome do arquivo da foto-01 da lista FOTOS DA MATÉRIA.
 [VÍDEO DA FLAMENGOTV]
@@ -716,7 +722,7 @@ TEXTO: ${repMode?"de 3 a 5":"de 6 a 10"} parágrafos corridos, sem rótulos inte
 - Nomes de entidades, relatórios e cargos por extenso quando o texto permitir; quando a legenda automática parecer ter errado um nome próprio (sigla ou entidade estranha), escreva a melhor forma seguida de [confirmar nome] para o revisor.
 - A cada 2 ou 3 parágrafos, uma linha [FOTO: nome-do-arquivo.jpg] usando as fotos da lista FOTOS DA MATÉRIA (não a capa), com os nomes exatamente iguais aos da lista. Nenhum vídeo dentro do texto.
 - Proibido no texto: minutagem, "no trecho", "no vídeo acima", horário de publicação, comentários sobre o que o roteiro tem ou não tem.
-- Última linha do texto: Assista ao episódio completo no YouTube da FlamengoTV: ${link}
+- Última linha do texto: a marca [VÍDEO DA FLAMENGOTV], sozinha na linha (ali o vídeo entra incorporado de novo). Não escreva o link do YouTube no texto.
 ${ehEntrevista?`Depois do texto, um ENTRETÍTULO em uma linha só, sem rótulo, neste modelo: Leia mais da conversa da Tainara no Mengocast (troque pelo primeiro nome do entrevistado, com "da" ou "do" conforme a pessoa, e pelo nome deste programa: ${p.n}). Abaixo dele, as perguntas e respostas como no Abre Aspas, na ordem do episódio, as 12 a 15 mais relevantes (menos, se o episódio for curto). Cada pergunta do apresentador em uma linha própria, sem nenhum prefixo ou rótulo (resuma quando for longa ou implícita), e na linha seguinte a resposta do entrevistado entre aspas, em primeira pessoa, literal e limpa de vícios de fala, com no máximo 5 frases cada (corte o que for digressão, sem mudar o sentido). Linha em branco entre cada par. Quando o episódio tem MAIS DE UM entrevistado, cada resposta começa com o nome de quem falou e dois-pontos, antes das aspas (ex.: Rodrigo Capelo: "…"); descubra quem fala pelas pistas da transcrição (o apresentador chama a pessoa pelo nome antes da pergunta; quem responde cita o outro convidado pelo nome; quem fala em seguida comenta a fala anterior); se a pergunta foi respondida pelos dois, faça dois parágrafos de resposta, um por pessoa; se não houver pista nenhuma, escreva [confirmar quem falou]: nunca chute. Com um entrevistado só, sem nome. A pergunta nunca traz o nome de quem vai responder (nada de "Mattos, como explicar…": escreva só "Como explicar…"), porque o nome já aparece antes da resposta. Se o texto for roteiro e não transcrição, escreva só: "Perguntas e respostas: disponível quando a transcrição for anexada".`:`Depois do texto, um ENTRETÍTULO em uma linha só, sem rótulo: Leia mais do ${p.n}. Abaixo dele, como este programa não é entrevista, as 5 a 8 falas mais fortes do episódio, literais, entre aspas, cada uma com travessão e o nome de quem disse, na ordem em que aparecem.`}
 
 === MENSAGEM PARA O GRUPO DE IMPRENSA ===
@@ -776,7 +782,7 @@ function posProcessa(text,p,link){
   if(p.collab) t=t.replace(/=== PARA QUEM PUBLICA ===\s*\n/, m=>m+`COLLAB: ${p.collab}\n`);
   // Matéria: uma linha em branco entre TODOS os parágrafos (o editor do CMS só entende quebra de parágrafo assim)
   t=t.replace(/(=== MATÉRIA PARA O SITE ===\s*\n)([\s\S]*?)(?=\n=== |$)/, (m,h,body)=>h+body.split("\n").map(l=>l.trim()).filter(Boolean).join("\n\n")+"\n");
-  t=t.replace(/\[VÍDEO DA FLAMENGOTV\]/g, `CÓDIGO DE INCORPORAÇÃO (cole antes do texto):\n${embedCode(link)}`);
+  { let k=0; t=t.replace(/\[VÍDEO DA FLAMENGOTV\]/g, ()=>`CÓDIGO DE INCORPORAÇÃO (${k++===0?"cole antes do texto":"cole aqui, no fim do texto"}):\n${embedCode(link)}`); }
   return t;
 }
 // Blocos com botão de copiar (editor vai pelo pacote .txt; fotos vão pela galeria)
@@ -795,10 +801,10 @@ function showOutput(){
   if(state.output){ const btn=document.createElement("button"); btn.className="btn"; btn.textContent="Copiar: Assessoria de imprensa"; btn.addEventListener("click",()=>copyText(assessoria(),"Resposta para a assessoria copiada.")); b.appendChild(btn); }
   b.hidden=!b.children.length;
   $("dled").disabled=!(downloadsFn&&secs["PARA O EDITOR"]);
-  const repM=prog().cortes==="reportagem"; $("notionbtn").hidden=!window.fluxoNotion||repM;
+  const repM=prog().cortes==="reportagem"; $("notionbtn").hidden=!window.fluxoNotion||repM||!!state.notion||!state.analyzed;
   { const rs=repM&&state.analyzed&&(window.fluxoNotion||window.fluxoEntrega)?reportagens():[]; $("repbox").hidden=!rs.length; const atual=$("repsel").value;
     if(rs.length&&$("repsel").dataset.sig!==JSON.stringify(rs)){ $("repsel").innerHTML=rs.map(r=>`<option value="${r.n}">#${r.n} · ${esc(r.titulo)}</option>`).join(""); $("repsel").dataset.sig=JSON.stringify(rs); if(atual) $("repsel").value=atual; }
-    $("repbtn").disabled=!!(state.notionRodando||state.entregaRodando); } $("notionbtn").disabled=!(state.analyzed&&secs["PARA QUEM PUBLICA"])||!!state.notionRodando; $("notionbtn").textContent=state.notion?"Enviar de novo ao Notion":"Enviar ao Notion";
+    $("repbtn").disabled=!!(state.notionRodando||state.entregaRodando); } $("notionbtn").disabled=!(state.analyzed&&secs["PARA QUEM PUBLICA"])||!!state.notionRodando; $("notionbtn").textContent="Tentar de novo o envio ao Notion";
   $("fotos").disabled=!(mcp&&(secs["FOTOS DA MATÉRIA"]||secs["PARA O EDITOR"])&&ytId($("link").value)&&!state.fotosRodando);
 }
 
@@ -1028,7 +1034,7 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
     state.notion=feitos.map(x=>({titulo:x.titulo,url:x.url})); salvaRascunho(); autoSalvar();
     const avisos=feitos.flatMap(x=>x.avisos.map(a=>`${x.titulo.split(" | ")[0]}: ${a}`)); if(!meta.statusOk) avisos.unshift('o status "Rafa Edits" não existe na base; os cards entraram em "Backlog"');
     $("notionstatus").innerHTML=`${feitos.length} ${feitos.length===1?"card criado":"cards criados"} no Notion: `+feitos.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titulo.split(" | ")[0])}</a>`).join(" · ")+(avisos.length?`<br>Atenção: ${esc(avisos.join("; "))}.`:"");
-  }catch(e){ nStatus("Não foi possível criar os cards no Notion: "+((e&&e.message)||"erro")+". Tente de novo pelo botão “Enviar ao Notion”."); }
+  }catch(e){ nStatus("Não foi possível criar os cards no Notion: "+((e&&e.message)||"erro")+". Tente de novo pelo botão “Tentar de novo o envio ao Notion”."); }
   state.notionRodando=false; showOutput();
 }
 $("notionbtn").addEventListener("click",()=>enviarNotion());
@@ -1049,7 +1055,7 @@ async function enviarTextos(soN){
     const doZip=f=>!soN||f.corte===soN||new RegExp("^foto-0*"+soN+"\\b").test(f.nome||"");
     if(mat){
       eS("Matéria: criando o Google Doc…");
-      const html=`<html><head><meta charset="utf-8"></head><body><p style="color:#888888">${esc(nomeProg)} · ${esc(titulo)}${link?` · <a href="${esc(link)}">${esc(link)}</a>`:""}</p>${materiaHTML(mat)}</body></html>`;
+      const html=`<html><head><meta charset="utf-8"></head><body>${materiaHTML(mat).split("\n").join("\n<p><br></p>\n")}</body></html>`;
       const d=await EN.doc(`Matéria | ${nomeProg} | ${titulo}`,html); ent.doc=d.url; feito.push("matéria no Google Doc");
       if(soN) state.zipUrl="";
       if(!state.zipUrl&&(state.fotos||[]).some(f=>doZip(f)&&escolhida(f)&&escolhida(f).url)){ eS("Matéria: gerando o .zip das fotos…"); await gerarZip(soN?doZip:null); }
@@ -1060,7 +1066,10 @@ async function enviarTextos(soN){
     }
     if(decisao().dec==="go"&&p.n!=="Memengo"){
       eS("Assessoria: enviando o texto no WhatsApp…");
-      await EN.whatsapp(assessoria()); feito.push("texto da assessoria no WhatsApp"); ent.assessoria=true;
+      const A=assessoria(true), pausa=()=>new Promise(r=>setTimeout(r,1500));
+      await EN.whatsapp(A.decisao);
+      if(A.mensagem){ await pausa(); await EN.whatsapp("*MENSAGEM PARA O GRUPO DE IMPRENSA* ⬇️"); await pausa(); await EN.whatsapp(A.mensagem); }
+      feito.push("decisão da assessoria"+(A.mensagem?" e mensagem para o grupo de imprensa":"")+" no WhatsApp"); ent.assessoria=true;
     }
     state.entrega=ent; salvaRascunho(); autoSalvar();
     $("entregastatus").innerHTML=feito.length?`Enviado: ${esc(feito.join("; "))}.${ent.doc?` <a href="${esc(ent.doc)}" target="_blank" rel="noopener">Abrir o Doc</a>`:""}${falhou.length?`<br>Atenção: ${esc(falhou.join("; "))}.`:""}`:"";

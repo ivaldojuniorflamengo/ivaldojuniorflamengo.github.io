@@ -190,7 +190,7 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
   </div>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Publicação</th><th>Programa</th><th>Título</th><th>Apresenta</th><th>Por</th><th></th></tr></thead>
+      <thead><tr><th>Publicação</th><th>Programa</th><th>Título</th><th>Apresentação</th><th>Por</th><th></th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
     <div class="empty" id="empty">Nenhum episódio no histórico ainda. Ele entra sozinho quando a análise termina.</div>
@@ -544,7 +544,7 @@ function assessoria(partes,soN){
   const yes=QS.filter(q=>state.ans[q.k]).map(q=>q.t);
   const L=[`RESPOSTA PARA A ASSESSORIA DE IMPRENSA — ${p.n}`,
     `Título do vídeo: ${$("tema").value.trim()||"—"}`,
-    `Apresenta: ${$("apresentadores").value.trim()||"—"}`,
+    `Apresentação: ${$("apresentadores").value.trim()||"—"}`,
     ...($("convidado").value.trim()?[`Convidado ou personagem: ${$("convidado").value.trim()}`]:[]),
     `Episódio: ${$("link").value.trim()||"—"}`,
     "",
@@ -567,7 +567,7 @@ function assessoria(partes,soN){
 // --- output
 function header(p){
   return `FLUXO DE DIVULGAÇÃO — ${p.n}
-APRESENTA: ${$("apresentadores").value.trim()||"[apresentadores]"}
+APRESENTAÇÃO: ${$("apresentadores").value.trim()||"[apresentadores]"}
 ${redesResumo(p)}
 `;
 }
@@ -1024,7 +1024,7 @@ async function baixar(nome,data){
   try{ await downloadsFn.save({filename:nome,data}); toast("Arquivo salvo."); }
   catch(e){ if(e&&e.code==="declined") toast("Download cancelado."); else toast("Não foi possível salvar o arquivo."); }
 }
-function pacoteEditor(soN){ const s=sections(); const ed=s["PARA O EDITOR"]||""; return `${prog().n} · ${$("tema").value.trim()}\nApresenta: ${$("apresentadores").value.trim()}\n\n=== PARA O EDITOR ===\n${soN?(()=>{ const L=ed.split("\n"); const k=L.findIndex(l=>/^#\d+\b/.test(l.trim())); return (L.slice(0,k<0?L.length:k).join("\n").trim()+"\n\n"+trechoN(ed,soN)).trim(); })():ed}\n\n=== TRANSCRIÇÃO ===\n${transcricaoAtual()}`; }
+function pacoteEditor(soN){ const s=sections(); const ed=s["PARA O EDITOR"]||""; return `${prog().n} · ${$("tema").value.trim()}\nApresentação: ${$("apresentadores").value.trim()}\n\n=== PARA O EDITOR ===\n${soN?(()=>{ const L=ed.split("\n"); const k=L.findIndex(l=>/^#\d+\b/.test(l.trim())); return (L.slice(0,k<0?L.length:k).join("\n").trim()+"\n\n"+trechoN(ed,soN)).trim(); })():ed}\n\n=== TRANSCRIÇÃO ===\n${transcricaoAtual()}`; }
 $("dled").addEventListener("click",()=>baixar(`editor-${slug()}.txt`,pacoteEditor()));
 
 // --- Notion: um card por conteúdo (corte em 9:16; corte em 16:9 à parte; carrossel de aspas), montado pela IA a partir do bloco dos publicadores

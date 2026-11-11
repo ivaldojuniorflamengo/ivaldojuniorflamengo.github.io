@@ -166,15 +166,6 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
         <label for="repsel" style="display:block;font-weight:700;margin-bottom:6px">Reportagem especial do episódio</label>
         <div class="note" style="margin:0 0 8px">Nada do FlaPress é enviado sozinho. Escolha a matéria que vira a reportagem especial: só ela vai para o Notion, para o site (Google Doc) e para a assessoria.</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><select id="repsel" style="flex:1;min-width:220px"></select><button class="btn primary" id="repbtn" type="button">Enviar a reportagem especial</button></div>
-        <details id="repadd" style="margin-top:10px"><summary style="cursor:pointer">Faltou alguma reportagem na lista? Adicione pelo tempo do vídeo</summary>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:end">
-            <div><label for="repini" style="display:block;font-size:12px">Início (mm:ss)</label><input id="repini" placeholder="17:22" style="width:80px"></div>
-            <div><label for="repfim" style="display:block;font-size:12px">Fim (mm:ss)</label><input id="repfim" placeholder="18:02" style="width:80px"></div>
-            <div style="flex:1;min-width:180px"><label for="reptit" style="display:block;font-size:12px">Assunto</label><input id="reptit" placeholder="Ex.: Nova camisa homenageia Bruno Henrique" style="width:100%"></div>
-            <button class="btn" id="repaddbtn" type="button">Adicionar à lista</button>
-          </div>
-          <div class="status" id="repaddstatus"></div>
-        </details>
       </div>
       <div class="status" id="fotostatus"></div>
       <div class="status" id="notionstatus"></div>
@@ -631,8 +622,8 @@ Matéria completa: [link da matéria no site]
 }
 
 // Anel de carregamento: gira enquanto o texto de etapa termina em "…" e vira ✓ quando a etapa conclui
-["genstatus","trstatus","fotostatus","zipstatus","notionstatus","entregastatus","repaddstatus"].forEach(id=>{ const el=$(id); if(!el) return;
-  const upd=()=>{ const t=el.textContent.trim(); el.classList.toggle("busy",/…/.test(t)&&!/^Pronto|prontos|adicionada/.test(t)); el.classList.toggle("done",/^Pronto|momentos prontos|^Transcrição adicionada|^\.zip pronto|baixado|cards? criados?|^Enviado|^Adicionada/i.test(t)); };
+["genstatus","trstatus","fotostatus","zipstatus","notionstatus","entregastatus"].forEach(id=>{ const el=$(id); if(!el) return;
+  const upd=()=>{ const t=el.textContent.trim(); el.classList.toggle("busy",/…/.test(t)&&!/^Pronto|prontos|adicionada/.test(t)); el.classList.toggle("done",/^Pronto|momentos prontos|^Transcrição adicionada|^\.zip pronto|baixado|cards? criados?|^Enviado/i.test(t)); };
   new MutationObserver(upd).observe(el,{childList:true,characterData:true,subtree:true}); upd(); });
 $("ibtn").addEventListener("click",e=>{ e.stopPropagation(); const p=$("ipop"); p.hidden=!p.hidden; $("ibtn").setAttribute("aria-expanded",String(!p.hidden)); });
 document.addEventListener("click",e=>{ const p=$("ipop"); if(!p.hidden&&!p.contains(e.target)){ p.hidden=true; $("ibtn").setAttribute("aria-expanded","false"); } });
@@ -750,18 +741,13 @@ Avalie, só com base na transcrição, se o episódio traz declaração ou fato 
 Diga se o assunto principal do episódio é um esporte olímpico do Flamengo (basquete, vôlei, natação, ginástica, judô, remo, polo aquático, nado artístico e outras modalidades fora do futebol), por exemplo quando o convidado é atleta ou integrante de comissão técnica de uma dessas modalidades. Exatamente duas linhas: na primeira, só a palavra SIM ou NÃO; na segunda, se SIM, a modalidade e quem é a pessoa; se NÃO, um traço.
 
 ${contexto}`;
-  const promptC=(n,linhas,comEditor)=>`${regras}
+  const promptC=(n,linhas)=>`${regras}
 
 Este episódio do ${p.n} tem várias reportagens. Agora você trabalha SÓ na reportagem #${n}, descrita no bloco do editor abaixo. Use só a parte da transcrição dentro do intervalo dela; o resto do episódio é contexto e não entra em nenhum texto.
 ${linhas}
 
 Separe os blocos exatamente com estas linhas de marcação, nesta ordem, e não escreva nada além deles:
-${comEditor?`
-=== EDITOR ===
-Duas linhas, exatamente assim:
-Hook do Shorts: [mm:ss–mm:ss] · "frase literal do hook" (o momento mais forte da reportagem, de 3 a 5 segundos, dentro do intervalo dela)
-Trecho: as falas da reportagem, literais, do início ao fim, limpas de vícios de fala.
-`:""}
+
 === LEGENDAS ===
 Primeira linha: #${n} · Por quê: os motivos em uma linha (emoção ou história pessoal; nome ou assunto que a torcida reconhece na hora; a reportagem se entende sozinha; hook forte).
 Segunda linha: Quando: se for a reportagem especial escolhida: ${p.crono||"pelo cronograma do programa"}
@@ -777,7 +763,6 @@ ${regrasMateria}
 ${MSG_IMPRENSA}
 
 ${contexto}`;
-  state.promptC=repMode?promptC:null; state.fmtEditor=fmtEditor;
   ctl=new AbortController();
   $("analisar").disabled=true; $("cancelar").hidden=false; $("genstatus").textContent="Lendo a transcrição…";
   const head=header(p);
@@ -867,7 +852,7 @@ function showOutput(){
   const repM=prog().cortes==="reportagem"; $("notionbtn").hidden=!window.fluxoNotion||repM||!!state.notion||!state.analyzed;
   { const rs=repM&&state.analyzed&&(window.fluxoNotion||window.fluxoEntrega)?reportagens():[]; $("repbox").hidden=!rs.length; const atual=$("repsel").value;
     if(rs.length&&$("repsel").dataset.sig!==JSON.stringify(rs)){ $("repsel").innerHTML=rs.map(r=>`<option value="${r.n}">#${r.n} · ${esc(r.titulo)}</option>`).join(""); $("repsel").dataset.sig=JSON.stringify(rs); if(atual) $("repsel").value=atual; }
-    $("repbtn").disabled=!!(state.notionRodando||state.entregaRodando||state.repAddRodando); $("repaddbtn").disabled=!!state.repAddRodando; } $("notionbtn").disabled=!(state.analyzed&&secs["PARA QUEM PUBLICA"])||!!state.notionRodando; $("notionbtn").textContent="Tentar de novo o envio ao Notion";
+    $("repbtn").disabled=!!(state.notionRodando||state.entregaRodando); } $("notionbtn").disabled=!(state.analyzed&&secs["PARA QUEM PUBLICA"])||!!state.notionRodando; $("notionbtn").textContent="Tentar de novo o envio ao Notion";
   $("fotos").disabled=!(mcp&&(secs["FOTOS DA MATÉRIA"]||secs["PARA O EDITOR"])&&ytId($("link").value)&&!state.fotosRodando);
 }
 
@@ -1102,49 +1087,6 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
   state.notionRodando=false; showOutput();
 }
 $("notionbtn").addEventListener("click",()=>enviarNotion());
-// Coloca um texto no fim de uma seção do resultado (ou antes de uma linha da seção), criando a seção se ela não existir
-function poeNaSecao(nome,texto,antesDe){
-  let o=state.output; const re=new RegExp("^=== "+nome.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+" ===\\s*$","m"); const m=o.match(re);
-  if(!m){ state.output=o.trimEnd()+`\n\n=== ${nome} ===\n${texto}\n`; return; }
-  const ini=m.index+m[0].length; const prox=o.slice(ini).search(/\n=== .+ ===\s*$/m); const fim=prox<0?o.length:ini+prox;
-  let corpo=o.slice(ini,fim); const k=antesDe?corpo.search(antesDe):-1;
-  corpo=k>=0?corpo.slice(0,k).trimEnd()+"\n\n"+texto+"\n\n"+corpo.slice(k):corpo.trimEnd()+"\n\n"+texto+"\n";
-  state.output=o.slice(0,ini)+corpo+o.slice(fim);
-}
-$("repaddbtn").addEventListener("click",async()=>{
-  const a=$("repini").value.trim(), b=$("repfim").value.trim(), tit=$("reptit").value.trim(); const aS=t=>$("repaddstatus").textContent=t;
-  if(!/^\d{1,2}:\d{2}$/.test(a)||!/^\d{1,2}:\d{2}$/.test(b)||toSec(b)<=toSec(a)) return aS("Informe início e fim no formato mm:ss (ex.: 17:22 e 18:02).");
-  if(!tit) return aS("Escreva o assunto da reportagem.");
-  if(!state.promptC||!sampleFn) return aS("Para adicionar, analise o episódio de novo nesta página (a transcrição precisa estar carregada).");
-  state.repAddRodando=true; showOutput();
-  try{
-    const n=Math.max(0,...reportagens().map(r=>r.n))+1; const d=toSec(b)-toSec(a);
-    const linha=`#${n} · [${a}–${b}] · ~${d>=60?Math.round(d/60)+"min":d+"s"} · Reportagem: ${tit} · Formato: ${state.fmtEditor}`;
-    aS(`Escrevendo legendas, matéria e trecho da reportagem #${n}…`);
-    const r=await sampleFn(state.promptC(n,linha+"\n(reportagem indicada por quem usa a ferramenta)",true),{modelTier:"default",maxTokens:8000});
-    const pega=nome=>((r.text||"").match(new RegExp("=== "+nome+" ===\\s*\\n([\\s\\S]*?)(?=\\n=== |$)"))||["",""])[1].trim();
-    const ed=pega("EDITOR"), leg=pega("LEGENDAS"), mat=pega("MATÉRIA"), msg=pega("MENSAGEM");
-    if(!leg) throw new Error("a IA não devolveu as legendas");
-    poeNaSecao("PARA O EDITOR",`${linha}\n${ed}`);
-    poeNaSecao("PARA QUEM PUBLICA",leg,/^EPISÓDIO COMPLETO\s*$/m);
-    if(mat) poeNaSecao("MATÉRIA PARA O SITE",posProcessa("=== MATÉRIA PARA O SITE ===\n"+(/^-{3,}\s*MATÉRIA #/.test(mat)?mat:`--- MATÉRIA #${n} ---\n${mat}`),prog(),$("link").value.trim()).replace(/^=== MATÉRIA PARA O SITE ===\s*\n/,"").trim());
-    if(msg) poeNaSecao("MENSAGENS PARA A IMPRENSA",`--- MATÉRIA #${n} ---\n${msg}`);
-    showOutput(); salvaRascunho(); autoSalvar();
-    // capa da reportagem nova (a lista de fotos das outras não muda)
-    const link=$("link").value.trim(); const hk=(ed.match(/\[(\d{1,2}:\d{2})/)||[])[1]||a;
-    if(mcp&&ytId(link)){ aS(`Reportagem #${n} adicionada. Gerando a capa…`);
-      try{ const base=toSec(hk); const ts=OFFSETS.corte.map(o=>String(base+o)); const nomes=ts.map((_,k)=>`opcao-r${n}-${k+1}.jpg`);
-        const items=await rodarFrames({url:link,timestamps:ts,names:nomes,vertical:nomes},()=>{});
-        const cands=items.filter(x=>x.type==="frame").map(it=>({ts:it.timestamp,url:it.url||"",vurl:it.verticalUrl||"",thumb:it.thumb||"",w:it.width,h:it.height,erro:it.error||""}));
-        state.fotos=(state.fotos||[]).concat([{nome:`capa-corte-${String(n).padStart(2,"0")}.jpg`,ts:hk,tipo:"corte",corte:n,desc:"capa da reportagem #"+n,cands,sel:cands.findIndex(c=>c.url),motivo:""}]);
-        renderGaleria(); salvaRascunho(); autoSalvar();
-      }catch(e){ console.warn("capa da reportagem adicionada",e); }
-    }
-    showOutput(); $("repsel").value=String(n); ["repini","repfim","reptit"].forEach(id=>$(id).value="");
-    aS(`Adicionada a reportagem #${n} (${tit}). Ela já está selecionada na lista acima.`);
-  }catch(e){ aS("Não foi possível adicionar: "+((e&&e.message)||"erro")+"."); }
-  state.repAddRodando=false; showOutput();
-});
 $("repbtn").addEventListener("click",async()=>{ const n=+$("repsel").value; if(!n) return; $("repbtn").disabled=true;
   if(window.fluxoNotion) await enviarNotion(n); if(window.fluxoEntrega) await enviarTextos(n);
   state.repEscolhida=n; showOutput(); });

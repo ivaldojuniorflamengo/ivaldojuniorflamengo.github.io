@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>HOMOLOGAÇÃO · Fluxo de Divulgação FlamengoTV</title>
+<title>Fluxo de Divulgação FlamengoTV</title>
 <style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -104,7 +104,7 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
 <header>
   <div>
     <div class="eyebrow">FlamengoTV · Gerência de Conteúdo</div>
-    <h1>Fluxo de Divulgação <span style="font-size:.45em;color:var(--red);vertical-align:middle">homologação</span></h1>
+    <h1>Fluxo de Divulgação</h1>
   </div>
   <div class="note" id="who"></div>
 </header>
@@ -146,10 +146,10 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
       <div class="ipop" id="ipop" role="dialog" aria-label="O que sai da análise" hidden>
       <ol>
         <li><b>Para o editor</b>: link, formatos do programa (vertical 9:16 / horizontal 16:9) e os cortes com timecode, o hook (gancho: o momento mais forte, com minutagem própria, que abre o vídeo e se repete no lugar dele) e o trecho da transcrição. Vai para ele pelo botão “Baixar pacote do editor”, junto com a transcrição.</li>
-        <li><b>Publicadores</b>: os cortes do maior ao menor potencial de viralização, com o motivo, a capa de cada corte e uma legenda pronta por rede do programa, no limite de cada campo.</li>
-        <li><b>Fotos e capas</b>: os momentos do vídeo que viram foto da matéria (capa e entre parágrafos) e a capa de cada corte (no momento do hook). O botão “Gerar prints do vídeo” extrai opções de cada momento em 1920×1080, direto do stream, sem baixar o episódio; a IA faz uma pré-escolha olhando as imagens, você troca clicando na miniatura e baixa tudo em um .zip com os nomes certos (capas dos cortes só em 1080×1920).</li>
+        <li><b>Publicadores</b>: os cortes do maior ao menor potencial de viralização, com o motivo e uma legenda pronta por rede do programa, no limite de cada campo.</li>
+        <li><b>Fotos da matéria</b>: os momentos do vídeo que viram foto da matéria (capa e entre parágrafos), só nos programas que têm matéria no site. Depois da análise, os prints saem sozinhos em 1920×1080, direto do stream; a IA escolhe o melhor frame de cada momento, e o .zip com as fotos e a thumbnail do episódio vai junto com a matéria.</li>
         <li><b>Matéria para o site</b>: título, subtítulo e texto completo no padrão Abre Aspas, com o embed do episódio no topo, as fotos entre parágrafos e as perguntas e respostas no final.</li>
-        <li><b>Resposta para a assessoria de imprensa</b>: a decisão (trabalhar imprensa, destaque no mailing semanal ou só agenda), a avaliação da IA sobre o potencial de manchete, os grupos de WhatsApp para envio (mais o grupo de olímpicos quando o episódio envolve esporte olímpico) e o porquê, e a mensagem de duas linhas + link da matéria publicada. Sai pelo botão “Copiar: Assessoria de imprensa”. É a matéria que vai para o mailing; não há release separado.</li>
+        <li><b>Resposta para a assessoria de imprensa</b>: a decisão (trabalhar imprensa, destaque no mailing semanal ou só agenda), a avaliação da IA sobre o potencial de manchete, os grupos de WhatsApp para envio (mais o grupo de olímpicos quando o episódio envolve uma das modalidades olímpicas do clube) e o porquê, e a mensagem de duas linhas + link da matéria publicada. Sai pelo botão “Copiar: Assessoria de imprensa”. É a matéria que vai para o mailing; não há release separado.</li>
         <li><b>Histórico</b>: o episódio entra sozinho no histórico assim que a análise termina, e o mesmo registro é atualizado quando você analisa de novo, gera os prints ou troca uma foto. “Limpar” limpa a tela para o próximo, sem apagar nada do histórico.</li>
       </ol>
       </div></div>
@@ -157,7 +157,7 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
       <div class="actions" id="secbtns" hidden></div>
       <div class="actions">
         <button class="btn primary" id="copy" disabled>Copiar tudo</button>
-        <button class="btn" id="fotos" disabled>Gerar prints do vídeo</button>
+        <button class="btn" id="fotos" hidden disabled>Tentar de novo as fotos</button>
         <button class="btn" id="dled" disabled>Baixar pacote do editor (.txt)</button>
         <button class="btn" id="notionbtn" hidden disabled>Enviar ao Notion</button>
         <button class="btn ghost" id="clear">Limpar</button>
@@ -170,12 +170,6 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
       <div class="status" id="fotostatus"></div>
       <div class="status" id="notionstatus"></div>
       <div class="status" id="entregastatus"></div>
-      <div class="gal" id="galeria" hidden>
-        <h3>Fotos: escolha a melhor opção de cada momento</h3>
-        <div class="note" style="margin-top:0">A opção marcada em vermelho é a escolhida. Clique em outra para trocar. Depois, baixe todas com o nome certo em um .zip: fotos da matéria (1920×1080) e capa de cada corte (só em 1080×1920, recortada no centro, para Reels, TikTok e Shorts) e a thumbnail do episódio no YouTube (thumbnail-youtube.jpg), que também pode entrar na matéria.</div>
-        <div id="momentos"></div>
-        <div class="actions"><button class="btn primary" id="zipfotos" type="button">Baixar fotos e capas (.zip)</button><span class="status" id="zipstatus"></span></div>
-      </div>
       <div class="toast" id="toast"></div>
     </div>
   </section>
@@ -387,8 +381,6 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
     const avisos=[];
     const coment=async(texto,anexo)=>{ const b={parent:{page_id:page.id},rich_text:rich(texto)}; if(anexo) b.attachments=[{file_upload_id:anexo}]; await post("comments",b); };
     await coment("LEGENDA\nSegue sugestão de legenda do conteúdo:\n"+(card.legenda||"—"));
-    if(card.capaUrl){ try{ await coment("CAPA INSTAGRAM E TIKTOK",await anexoUrl(card.capaUrl,card.capaNome||"capa.jpg")); }catch(e){ avisos.push("capa não anexada ("+e.message+")"); } }
-    else if(card.querCapa) avisos.push("sem capa (o print desse corte não foi gerado)");
     if(card.editorTxt){ try{ await coment("DIRECIONAMENTO PARA O EDITOR\nSegue #PacoteDoEditor (.txt)",await anexoTexto(card.editorTxt,card.editorNome||"pacote-do-editor.txt")); }catch(e){ avisos.push("pacote do editor não anexado ("+e.message+")"); } }
     return {url:page.url,titulo:card.titulo,avisos};
   }
@@ -405,10 +397,12 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
     return j;
   }
   const TESTE=/[?&]teste=1\b/.test(location.search);
+  // destino do WhatsApp: a versão oficial manda "oficial" (o Make troca para o número real); homologação e ?teste=1 vão para o número de teste
+  const DESTINO="teste"==="oficial"&&!TESTE?"oficial":"teste";
   window.fluxoEntrega={
     doc:(nome,html)=>E("doc",{name:(TESTE?"TESTE · ":"")+nome,html},"a criação do Google Doc"),
-    whatsapp:texto=>E("wa_text",{text:(TESTE?"[TESTE]\n":"")+texto},"o envio no WhatsApp"),
-    whatsappZip:(url,nome)=>E("wa_doc",{url,name:nome},"o envio do .zip no WhatsApp")
+    whatsapp:texto=>E("wa_text",{text:(TESTE?"[TESTE]\n":"")+texto,dest:DESTINO},"o envio no WhatsApp"),
+    whatsappZip:(url,nome)=>E("wa_doc",{url,name:nome,dest:DESTINO},"o envio do .zip no WhatsApp")
   };
 })();
 </script>
@@ -531,13 +525,18 @@ function decisao(){
 }
 // Resposta para a assessoria de imprensa: decisão (checklist + manchete avaliada pela IA), grupos de WhatsApp e mensagem para o grupo.
 // Episódio que envolve esporte olímpico (avaliado pela IA) vai também para o grupo de olímpicos, somado aos grupos do programa.
+// As 9 modalidades olímpicas do Flamengo: citar qualquer uma delas, ou atleta, comissão ou diretoria delas, já faz do conteúdo um tema olímpico.
+const MODALIDADES_OLIMPICAS="vôlei, basquete, ginástica artística, judô, futebol feminino, remo, natação, nado artístico e polo aquático";
+// Conferência por palavra, somada à avaliação da IA. "Remo" sozinho fica de fora: o Clube do Remo é adversário no futebol.
+const OLIMPICO_RX=/(?<![A-Za-zÀ-ÿ])(v[ôo]lei|voleibol|basquete|basquetebol|NBB|gin[áa]stic[ao]s?|ginasta|jud[ôo]|judoca|futebol feminino|time feminino|Brasileir[ãa]o Feminino|Brasileiro Feminino|remador(?:a|es|as)?|remo ol[íi]mpico|remo do Flamengo|nata[çc][ãa]o|nadador(?:a|es|as)?|nado art[íi]stico|polo aqu[áa]tico)(?![A-Za-zÀ-ÿ])/i;
+function olimpicoNoTexto(t){ const m=String(t||"").match(OLIMPICO_RX); return m?m[1]:""; }
 const GRUPOS={"MÍDIA TRADICIONAL":"IMPRENSA FLAMENGO INSTITUCIONAL #01","TIER 2 GERAL":"IMPRENSA FLAMENGO INSTITUCIONAL #02","MÍDIA RUBRO-NEGRA":"IMPRENSA FLAMENGO INSTITUCIONAL #03","TIER 2 MRN":"IMPRENSA FLAMENGO INSTITUCIONAL #04","NEGÓCIOS":"IMPRENSA FLAMENGO INSTITUCIONAL #05","OLÍMPICOS":"EEOO IMPRENSA FLAMENGO"};
 function gruposDe(seg){ return seg.split("+").map(s=>s.trim()).filter(Boolean).map(s=>GRUPOS[s]?`- ${GRUPOS[s]} (${s})`:`- ${s}: sem grupo de WhatsApp definido`); }
 function tiraSecao(t,nome){ const i=t.indexOf("=== "+nome+" ==="); if(i<0) return t; const j=t.indexOf("\n=== ",i+5); return (t.slice(0,i)+(j<0?"":t.slice(j+1))).trimEnd(); }
 // Resultado completo: tudo que a análise gerou + a resposta da assessoria no fim (é o que aparece na tela e o que "Copiar tudo" leva)
 function saidaCompleta(){
   if(!state.output) return "";
-  const t=["MENSAGEM PARA O GRUPO DE IMPRENSA","MENSAGENS PARA A IMPRENSA","POTENCIAL DE MANCHETE","ESPORTE OLÍMPICO"].reduce((a,n)=>tiraSecao(a,n),state.output);
+  const t=["MENSAGEM PARA O GRUPO DE IMPRENSA","MENSAGENS PARA A IMPRENSA","POTENCIAL DE MANCHETE","ESPORTE OLÍMPICO","ESPORTE OLÍMPICO POR REPORTAGEM"].reduce((a,n)=>tiraSecao(a,n),state.output);
   return t+"\n\n=== PARA A ASSESSORIA DE IMPRENSA ===\n"+assessoria();
 }
 function assessoria(partes,soN){
@@ -554,8 +553,12 @@ function assessoria(partes,soN){
     "O que fazer:", ...d.todo.map(x=>"- "+x)];
   const pm=(secs["POTENCIAL DE MANCHETE"]||"").split("\n").map(x=>x.trim()).filter(Boolean);
   if(pm.length) L.splice(L.indexOf("O que fazer:"),0,`Potencial de manchete (avaliação da IA): ${/^\W*sim/i.test(pm[0])?"Sim":"Não"}${pm[1]?" — "+pm[1]:""}`);
-  const ol=(secs["ESPORTE OLÍMPICO"]||"").split("\n").map(x=>x.trim()).filter(Boolean), olimpico=ol.length>0&&/^\W*sim/i.test(ol[0]);
-  if(d.dec==="go"&&p.n!=="Memengo") L.push("","GRUPOS DE WHATSAPP PARA ENVIO:",...gruposDe(p.seg+(olimpico?" + OLÍMPICOS":"")),`POR QUE ESSES GRUPOS: ${p.why}${olimpico?" O episódio envolve esporte olímpico do Flamengo"+(ol[1]?" ("+ol[1].replace(/\.$/,"")+")":"")+": vai também para o grupo de imprensa de olímpicos.":""}`,`COMO VIRA NOTÍCIA: ${p.ang}`);
+  // Olímpico: avaliação da IA (do episódio ou, no FlaPress, da reportagem escolhida) somada à conferência por palavra no material daquele conteúdo
+  const blocoOl=soN?(((secs["ESPORTE OLÍMPICO POR REPORTAGEM"]||"").split(/^(?=-{3,}\s*MATÉRIA #)/m).find(x=>new RegExp("^-{3,}\\s*MATÉRIA #"+soN+"\\b").test(x.trim()))||"").replace(/^-{3,}.*-{3,}\s*/,"")):(secs["ESPORTE OLÍMPICO"]||"");
+  const ol=blocoOl.split("\n").map(x=>x.trim()).filter(Boolean); const olIA=ol.length>0&&/^\W*sim/i.test(ol[0]);
+  const matOl=soN?[(reportagens().find(r=>r.n===soN)||{}).titulo,trechoN(secs["PARA O EDITOR"]||"",soN),materiaN(soN)].join("\n"):[$("tema").value,$("convidado").value,secs["MATÉRIA PARA O SITE"]].join("\n");
+  const olPal=olIA?"":olimpicoNoTexto(matOl); const olimpico=olIA||!!olPal; const olQual=olIA?(ol[1]||"").replace(/\.$/,""):olPal?"cita "+olPal:"";
+  if(d.dec==="go"&&p.n!=="Memengo") L.push("","GRUPOS DE WHATSAPP PARA ENVIO:",...gruposDe(p.seg+(olimpico?" + OLÍMPICOS":"")),`POR QUE ESSES GRUPOS: ${p.why}${olimpico?" "+(soN?"A reportagem":"O episódio")+" envolve modalidade olímpica do Flamengo"+(olQual&&olQual!=="-"&&olQual!=="—"?" ("+olQual+")":"")+": vai também para o grupo de imprensa de olímpicos.":""}`,`COMO VIRA NOTÍCIA: ${p.ang}`);
   const msg=d.dec==="no"?"":soN?(((secs["MENSAGENS PARA A IMPRENSA"]||"").split(/^(?=-{3,}\s*MATÉRIA #)/m).find(x=>new RegExp("^-{3,}\\s*MATÉRIA #"+soN+"\\b").test(x.trim()))||"").replace(/^-{3,}.*-{3,}\s*/,"").trim()):(secs["MENSAGEM PARA O GRUPO DE IMPRENSA"]||"").trim();
   if(partes){ // WhatsApp: a decisão com uma linha em branco entre os blocos; a mensagem para a imprensa vai separada, pronta para copiar
     const out=[]; L.filter(x=>x.trim()).forEach((x,i)=>{ if(i&&!x.startsWith("- ")) out.push(""); out.push(i===0?`*${x}*`:x); });
@@ -622,8 +625,8 @@ Matéria completa: [link da matéria no site]
 }
 
 // Anel de carregamento: gira enquanto o texto de etapa termina em "…" e vira ✓ quando a etapa conclui
-["genstatus","trstatus","fotostatus","zipstatus","notionstatus","entregastatus"].forEach(id=>{ const el=$(id); if(!el) return;
-  const upd=()=>{ const t=el.textContent.trim(); el.classList.toggle("busy",/…/.test(t)&&!/^Pronto|prontos|adicionada/.test(t)); el.classList.toggle("done",/^Pronto|momentos prontos|^Transcrição adicionada|^\.zip pronto|baixado|cards? criados?|^Enviado/i.test(t)); };
+["genstatus","trstatus","fotostatus","notionstatus","entregastatus"].forEach(id=>{ const el=$(id); if(!el) return;
+  const upd=()=>{ const t=el.textContent.trim(); el.classList.toggle("busy",/…/.test(t)&&!/^Pronto|prontos|adicionada/.test(t)); el.classList.toggle("done",/^Pronto|^Fotos prontas|^Transcrição adicionada|^\.zip pronto|baixado|cards? criados?|^Enviado/i.test(t)); };
   new MutationObserver(upd).observe(el,{childList:true,characterData:true,subtree:true}); upd(); });
 $("ibtn").addEventListener("click",e=>{ e.stopPropagation(); const p=$("ipop"); p.hidden=!p.hidden; $("ibtn").setAttribute("aria-expanded",String(!p.hidden)); });
 document.addEventListener("click",e=>{ const p=$("ipop"); if(!p.hidden&&!p.contains(e.target)){ p.hidden=true; $("ibtn").setAttribute("aria-expanded","false"); } });
@@ -738,7 +741,7 @@ ${MSG_IMPRENSA}
 Avalie, só com base na transcrição, se o episódio traz declaração ou fato com potencial de manchete para a imprensa: revelação, bastidor inédito, posição sobre polêmica ou número novo. Exatamente duas linhas: na primeira, só a palavra SIM ou NÃO; na segunda, se SIM, a declaração ou o fato (literal e curto, com o nome de quem disse) e por que rende manchete; se NÃO, o motivo em uma frase.
 
 === ESPORTE OLÍMPICO ===
-Diga se o assunto principal do episódio é um esporte olímpico do Flamengo (basquete, vôlei, natação, ginástica, judô, remo, polo aquático, nado artístico e outras modalidades fora do futebol), por exemplo quando o convidado é atleta ou integrante de comissão técnica de uma dessas modalidades. Exatamente duas linhas: na primeira, só a palavra SIM ou NÃO; na segunda, se SIM, a modalidade e quem é a pessoa; se NÃO, um traço.
+Diga se o episódio envolve alguma modalidade olímpica do Flamengo. O clube tem 9: ${MODALIDADES_OLIMPICAS}. Basta que qualquer uma delas seja mencionada no episódio, ou que apareça ou seja citado atleta, integrante de comissão técnica ou da diretoria de uma delas. Atenção: "Remo" pode ser o Clube do Remo, adversário no futebol; isso não conta. Exatamente duas linhas: na primeira, só a palavra SIM ou NÃO; na segunda, se SIM, a modalidade e quem é a pessoa ou onde é citada; se NÃO, um traço.
 
 ${contexto}`;
   const promptC=(n,linhas)=>`${regras}
@@ -761,6 +764,9 @@ ${regrasMateria}
 
 === MENSAGEM ===
 ${MSG_IMPRENSA}
+
+=== ESPORTE OLÍMPICO ===
+Diga se esta reportagem envolve alguma modalidade olímpica do Flamengo. O clube tem 9: ${MODALIDADES_OLIMPICAS}. Basta que qualquer uma delas seja mencionada na reportagem, ou que apareça ou seja citado atleta, integrante de comissão técnica ou da diretoria de uma delas. Atenção: "Remo" pode ser o Clube do Remo, adversário no futebol; isso não conta. Exatamente duas linhas: na primeira, só a palavra SIM ou NÃO; na segunda, se SIM, a modalidade e quem é a pessoa; se NÃO, um traço.
 
 ${contexto}`;
   ctl=new AbortController();
@@ -787,18 +793,19 @@ ${contexto}`;
       const leg=reps.map(n=>pega(res[n],"LEGENDAS")).filter(Boolean).join("\n\n");
       const mat=reps.map(n=>{ const m=pega(res[n],"MATÉRIA"); return m&&!/^-{3,}\s*MATÉRIA #/.test(m)?`--- MATÉRIA #${n} ---\n${m}`:m; }).filter(Boolean).join("\n\n");
       const msgs=reps.map(n=>{ const m=pega(res[n],"MENSAGEM"); return m?`--- MATÉRIA #${n} ---\n${m}`:""; }).filter(Boolean).join("\n\n");
+      const ols=reps.map(n=>{ const m=pega(res[n],"ESPORTE OLÍMPICO"); return m?`--- MATÉRIA #${n} ---\n${m}`:""; }).filter(Boolean).join("\n\n");
       textA=textA.replace(/(=== PARA QUEM PUBLICA ===\s*\n)/,`$1REPORTAGENS ESPECIAIS\n\n${leg}\n\n`); monta();
       $("genstatus").textContent="Escolhendo as fotos de cada reportagem…";
       const rB=await sampleFn(promptB.replace("@@LISTA_REPORTAGENS@@",reps.map(n=>lin(n).split("\n")[0]).join("\n")),{signal:ctl.signal, modelTier:"default"});
-      textB=(rB.text||"")+`\n\n=== MATÉRIA PARA O SITE ===\n${mat}\n\n=== MENSAGENS PARA A IMPRENSA ===\n${msgs}`; monta();
+      textB=(rB.text||"")+`\n\n=== MATÉRIA PARA O SITE ===\n${mat}\n\n=== MENSAGENS PARA A IMPRENSA ===\n${msgs}`+(ols?`\n\n=== ESPORTE OLÍMPICO POR REPORTAGEM ===\n${ols}`:""); monta();
     } else {
     $("genstatus").textContent="Lendo de novo para a matéria (2 de 2)…";
     const rB=await sampleFn(promptB,{signal:ctl.signal, modelTier:"default", onText:({text})=>{ $("genstatus").textContent="Escrevendo a matéria (2 de 2)…"; textB=text; monta(); }});
     textB=rB.text+(rB.truncated?"\n[matéria cortada pelo limite de tamanho: as perguntas e respostas podem estar incompletas]":""); monta();
     }
     state.analyzed=true; showOutput(); salvaRascunho(); autoSalvar();
-    // Etapas 2 e 3, automáticas: prints (a IA escolhe o frame; quem publica troca se precisar) e cards no Notion
-    if(mcp&&ytId(link)&&!state.fotosRodando){ $("genstatus").textContent="Gerando as capas e fotos (etapa 2 de 4)…"; await gerarFotos(); }
+    // Etapas 2 e 3, automáticas: fotos da matéria (a IA escolhe o frame) e cards no Notion
+    if(mcp&&ytId(link)&&COM_MATERIA.includes(p.n)&&!state.fotosRodando){ $("genstatus").textContent="Gerando as fotos da matéria (etapa 2 de 4)…"; await gerarFotos(); }
     if(window.fluxoNotion&&!state.notion&&p.cortes!=="reportagem"){ $("genstatus").textContent="Criando os cards no Notion (etapa 3 de 4)…"; await enviarNotion(); }
     if(window.fluxoEntrega&&!state.entrega&&p.cortes!=="reportagem"){ $("genstatus").textContent="Enviando a matéria e o texto da assessoria (etapa 4 de 4)…"; await enviarTextos(); }
     $("genstatus").textContent=p.cortes==="reportagem"&&(window.fluxoNotion||window.fluxoEntrega)?"Pronto. Escolha a reportagem especial abaixo para enviar.":"Pronto. Processo concluído.";
@@ -833,7 +840,7 @@ function posProcessa(text,p,link){
   t=t.split(/^(?=-{3,}\s*MATÉRIA #)/m).map(parte=>{ let k=0; return parte.replace(/\[VÍDEO DA FLAMENGOTV\]/g, ()=>`CÓDIGO DE INCORPORAÇÃO (${k++===0?"cole antes do texto":"cole aqui, no fim do texto"}):\n${embedCode(link)}`); }).join("");
   return t;
 }
-// Blocos com botão de copiar (editor vai pelo pacote .txt; fotos vão pela galeria)
+// Blocos com botão de copiar (editor vai pelo pacote .txt; fotos vão pelo .zip com a matéria)
 const SECS=[["PARA QUEM PUBLICA","Publicadores"],["MATÉRIA PARA O SITE","Matéria"]];
 function sections(){
   const out={}; const re=/^=== (.+?) ===\s*$/gm; let m, list=[];
@@ -853,26 +860,18 @@ function showOutput(){
   { const rs=repM&&state.analyzed&&(window.fluxoNotion||window.fluxoEntrega)?reportagens():[]; $("repbox").hidden=!rs.length; const atual=$("repsel").value;
     if(rs.length&&$("repsel").dataset.sig!==JSON.stringify(rs)){ $("repsel").innerHTML=rs.map(r=>`<option value="${r.n}">#${r.n} · ${esc(r.titulo)}</option>`).join(""); $("repsel").dataset.sig=JSON.stringify(rs); if(atual) $("repsel").value=atual; }
     $("repbtn").disabled=!!(state.notionRodando||state.entregaRodando); } $("notionbtn").disabled=!(state.analyzed&&secs["PARA QUEM PUBLICA"])||!!state.notionRodando; $("notionbtn").textContent="Tentar de novo o envio ao Notion";
-  $("fotos").disabled=!(mcp&&(secs["FOTOS DA MATÉRIA"]||secs["PARA O EDITOR"])&&ytId($("link").value)&&!state.fotosRodando);
+  $("fotos").hidden=!state.fotosFalhou; $("fotos").disabled=!(mcp&&secs["FOTOS DA MATÉRIA"]&&ytId($("link").value)&&!state.fotosRodando);
 }
 
 // --- fotos: extrai frames direto do stream do YouTube (Actor próprio no Apify), 3 opções por momento; a IA pré-escolhe olhando as imagens
 const FRAMES_ACTOR="leonardo.mello/youtube-frames";
-const OFFSETS={materia:[0,2.5,5],corte:[0,3]};
+const OFFSETS={materia:[0,2.5,5]};
 function toSec(ts){ const p=String(ts).split(":").map(Number); if(p.length===2) p.unshift(0); return p[0]*3600+p[1]*60+p[2]; }
 function parseFotos(){
   const s=sections(); const out=[];
   (s["FOTOS DA MATÉRIA"]||"").split("\n").forEach(l=>{
     const m=l.match(/^\s*(foto-[a-z0-9_\-]+\.(?:jpg|png))\s*·\s*\[?(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*(?:·\s*(.*))?$/i);
     if(m) out.push({nome:m[1].toLowerCase().replace(/\.png$/,".jpg"),ts:m[2],tipo:"materia",desc:(m[3]||"").trim()});
-  });
-  const edL=(s["PARA O EDITOR"]||"").split("\n");
-  edL.forEach((l,i)=>{
-    const m=l.match(/^\s*#(\d+)\s*·\s*\[?(\d{1,2}:\d{2}(?::\d{2})?)\s*[–\-]/);
-    if(!m) return;
-    // a capa do corte é o momento do hook (linha seguinte), que é o que abre o vídeo
-    const h=(edL[i+1]||"").match(/^\s*Hook:\s*\[?(\d{1,2}:\d{2}(?::\d{2})?)/i);
-    out.push({nome:`capa-corte-${String(m[1]).padStart(2,"0")}.jpg`,ts:h?h[1]:m[2],tipo:"corte",corte:+m[1],desc:"capa do corte #"+m[1]+(h?" (momento do hook)":"")});
   });
   return out.slice(0,14);
 }
@@ -898,30 +897,32 @@ async function rodarFrames(input,onProgress){
 }
 async function gerarFotos(){
   const link=$("link").value.trim(); const lista=parseFotos();
-  if(!lista.length){ fStatus("Não encontrei timecodes na lista FOTOS DA MATÉRIA nem nos cortes. Gere a análise primeiro."); return; }
-  state.fotosRodando=true; showOutput(); salvaRascunho();
+  if(!lista.length){ fStatus("Não encontrei timecodes na lista FOTOS DA MATÉRIA. Gere a análise primeiro."); return; }
+  state.fotosRodando=true; state.fotosFalhou=false; showOutput(); salvaRascunho();
   try{
     const ts=[]; const mapa=[];
     lista.forEach((f,i)=>{ const base=toSec(f.ts); OFFSETS[f.tipo].forEach(o=>{ ts.push(String(base+o)); mapa.push(i); }); });
     fStatus(`Extraindo ${ts.length} opções de imagem em 1080p (${lista.length} momentos; sem baixar o vídeo inteiro)…`);
     const nomes=ts.map((_,k)=>`opcao-${String(k+1).padStart(2,"0")}.jpg`);
-    const items=await rodarFrames({url:link,timestamps:ts,names:nomes,vertical:nomes.filter((_,k)=>lista[mapa[k]].tipo==="corte")},(n,s)=>fStatus(`Extraindo opções de imagem… ${n}/${ts.length} (${s} s)`));
+    const items=await rodarFrames({url:link,timestamps:ts,names:nomes},(n,s)=>fStatus(`Extraindo opções de imagem… ${n}/${ts.length} (${s} s)`));
     const frames=items.filter(x=>x.type==="frame");
     const fotos=lista.map(f=>({...f,cands:[],sel:-1,motivo:""}));
-    frames.forEach(it=>{ const i=mapa[+it.index-1]; if(i===undefined) return; fotos[i].cands.push({ts:it.timestamp,url:it.url||"",vurl:it.verticalUrl||"",thumb:it.thumb||"",w:it.width,h:it.height,erro:it.error||""}); });
+    frames.forEach(it=>{ const i=mapa[+it.index-1]; if(i===undefined) return; fotos[i].cands.push({ts:it.timestamp,url:it.url||"",thumb:it.thumb||"",w:it.width,h:it.height,erro:it.error||""}); });
     fotos.forEach(f=>{ f.sel=f.cands.findIndex(c=>c.url); });
     state.fotos=fotos; state.zipUrl=""; salvaRascunho();
     const ok=fotos.filter(f=>f.sel>=0).length;
     fStatus(`${ok} de ${fotos.length} momentos com imagem. Pedindo à IA que olhe as opções…`);
-    renderGaleria(); showOutput();
+    showOutput();
     try{ await preEscolhe(); }catch(e){ console.warn("pré-escolha",e); }
-    renderGaleria(); showOutput();
-    fStatus(`${ok} de ${fotos.length} momentos prontos. Confira as opções abaixo e troque clicando; depois baixe o .zip. Os links valem por alguns dias.`);
+    showOutput();
+    if(!ok) state.fotosFalhou=true;
+    fStatus(ok?`Fotos prontas: ${ok} de ${fotos.length} momentos, com o melhor frame de cada um escolhido pela IA. Vão no .zip junto com a matéria.`:"Nenhum print saiu. Tente de novo as fotos.");
   }catch(e){
     const c=e&&e.code;
     if(c==="server_not_connected"||c==="not_in_manifest"||c==="consent_required") fStatus("Sem acesso ao Apify nesta visualização (veja a mensagem da transcrição).");
     else if(c==="tool_error"&&/not found|não encontrado|404/i.test(e.message||"")) fStatus("O extrator de frames não foi encontrado na conta Apify conectada ("+FRAMES_ACTOR+").");
     else fStatus("Não foi possível gerar as fotos: "+((e&&e.message)||"erro")+". Alternativa: pedir os frames ao editor.");
+    state.fotosFalhou=true;
   }
   state.fotosRodando=false; showOutput(); if(state.fotos&&state.fotos.length) autoSalvar();
 }
@@ -956,8 +957,8 @@ async function preEscolhe(){
   if(!fotos.length) return;
   const imgs=await pranchas(fotos);
   if(imgs.length>lim.images.maxCount) imgs.length=lim.images.maxCount;
-  const lista=fotos.map((f,i)=>`Momento ${i+1}: ${f.nome} · ${f.tipo==="corte"?"capa de corte para as redes":"foto da matéria"} · ${f.desc||""}`).join("\n");
-  const prompt=`As imagens são pranchas de contato de um programa da FlamengoTV: cada linha é um momento do vídeo e as colunas A, B e C são frames tirados com poucos segundos de diferença. Para cada momento, escolha o melhor frame para publicar. Critérios, nesta ordem: olhos abertos e rosto nítido (sem borrão, sem transição, sem olhar para baixo); boca não congelada no meio de uma palavra; quem fala aparece inteiro no quadro; expressão viva (riso, gesto). Para a foto-01 (capa) prefira o plano mais aberto, com todos à mesa; para fotos descritas como "convidado sozinho" prefira o plano fechado nele; para capa de corte prefira o frame mais expressivo. Se as três opções forem ruins (todas de olhos fechados ou borradas), ainda assim escolha a menos ruim e diga isso no motivo.
+  const lista=fotos.map((f,i)=>`Momento ${i+1}: ${f.nome} · ${f.desc||""}`).join("\n");
+  const prompt=`As imagens são pranchas de contato de um programa da FlamengoTV: cada linha é um momento do vídeo e as colunas A, B e C são frames tirados com poucos segundos de diferença. Para cada momento, escolha o melhor frame para publicar. Critérios, nesta ordem: olhos abertos e rosto nítido (sem borrão, sem transição, sem olhar para baixo); boca não congelada no meio de uma palavra; quem fala aparece inteiro no quadro; expressão viva (riso, gesto). Para a foto-01 (capa) prefira o plano mais aberto, com todos à mesa; para fotos descritas como "convidado sozinho" prefira o plano fechado nele. Se as três opções forem ruins (todas de olhos fechados ou borradas), ainda assim escolha a menos ruim e diga isso no motivo.
 Momentos:
 ${lista}
 Responda só com um JSON: um array com um objeto por momento, {"m": número do momento, "e": "A"|"B"|"C", "motivo": "até 12 palavras"}.`;
@@ -965,37 +966,21 @@ Responda só com um JSON: um array com um objeto por momento, {"m": número do m
   if(!Array.isArray(r)) return;
   r.forEach(x=>{ const f=fotos[(+x.m)-1]; if(!f) return; const k="ABC".indexOf(String(x.e||"").trim().toUpperCase()[0]); if(k>=0&&f.cands[k]&&f.cands[k].url){ f.sel=k; f.motivo=String(x.motivo||"").slice(0,140); } });
 }
-function renderGaleria(){
-  const fotos=state.fotos||[]; const temThumb=fotos.some(f=>f.cands&&f.cands.some(c=>c.thumb));
-  $("galeria").hidden=!temThumb; if(!temThumb){ $("momentos").innerHTML=""; return; }
-  const grupo=i=>{ const f=fotos[i]; const first=fotos.findIndex(x=>x.tipo===f.tipo)===i; return first?`<h3 style="margin:14px 0 4px">${f.tipo==="corte"?"Capas dos cortes (vão em 9:16)":"Fotos da matéria"}</h3>`:""; };
-  $("momentos").innerHTML=fotos.map((f,i)=>`${grupo(i)}<div class="mom"><div class="t"><b>${esc(f.nome)}</b> · ${esc(f.ts)} · ${esc(f.desc||"")}</div>
-    <div class="cands">${(f.cands||[]).map((c,k)=>`<button type="button" class="cand${f.sel===k?" sel":""}" data-m="${i}" data-k="${k}" ${c.url?"":"disabled"} aria-pressed="${f.sel===k}" aria-label="Opção ${"ABC"[k]}">${c.thumb?`<img src="${c.thumb}" alt="">`:`<div style="aspect-ratio:16/9;display:grid;place-items:center;font-size:12px;color:var(--muted)">${c.erro?"falhou":"sem imagem"}</div>`}<span>${"ABC"[k]}</span></button>`).join("")}</div>
-    ${f.motivo?`<div class="why">IA: ${esc(f.motivo)}</div>`:""}</div>`).join("");
-  $("zipfotos").disabled=!!state.zipRodando;
-}
-$("momentos").addEventListener("click",e=>{
-  const b=e.target.closest("button.cand"); if(!b||b.disabled) return;
-  const f=state.fotos[+b.dataset.m]; if(!f) return; f.sel=+b.dataset.k; f.motivo=""; state.zipUrl=""; $("zipstatus").textContent="";
-  renderGaleria(); showOutput(); autoSalvar();
-});
+function renderGaleria(){} // a galeria saiu da tela: a IA escolhe o frame e tudo segue sozinho
 function escolhida(f){ return f.sel>=0&&f.cands&&f.cands[f.sel]?f.cands[f.sel]:(f.url?{url:f.url}:null); }
 // As fotos vão pelo .zip (nomes iguais aos da lista FOTOS DA MATÉRIA); o texto não recebe links.
 async function gerarZip(filtro){
   const fotos=(state.fotos||[]).filter(f=>(typeof filtro!=="function"||filtro(f))&&escolhida(f)&&escolhida(f).url&&escolhida(f).ts!==undefined);
-  if(!fotos.length){ $("zipstatus").textContent="Nenhuma opção escolhida."; return; }
-  state.zipRodando=true; renderGaleria();
+  if(!fotos.length) return;
+  state.zipRodando=true;
   try{
-    $("zipstatus").textContent=`Gerando o .zip com ${fotos.length} fotos renomeadas (cerca de ${Math.round(fotos.length*8/60+1)} min)…`;
-    const items=await rodarFrames({url:$("link").value.trim(),timestamps:fotos.map(f=>String(escolhida(f).ts)),names:fotos.map(f=>f.nome),vertical:fotos.filter(f=>f.tipo==="corte").map(f=>f.nome),thumbnail:true,zip:true,zipName:`fotos-${slug()}.zip`},(n,s)=>{ $("zipstatus").textContent=`Gerando o .zip… ${n}/${fotos.length} (${s} s)`; });
+    const items=await rodarFrames({url:$("link").value.trim(),timestamps:fotos.map(f=>String(escolhida(f).ts)),names:fotos.map(f=>f.nome),thumbnail:true,zip:true,zipName:`fotos-${slug()}.zip`},(n,s)=>{ $("entregastatus").textContent=`Matéria: gerando o .zip das fotos… ${n}/${fotos.length} (${s} s)`; });
     const done=items.find(x=>x.type==="done");
     if(!done||!done.zipUrl) throw new Error("o Apify não devolveu o arquivo");
     state.zipUrl=done.zipUrl; salvaRascunho(); autoSalvar();
-    $("zipstatus").innerHTML=`Pronto: <a href="${esc(done.zipUrl)}" target="_blank" rel="noopener">baixar fotos-${esc(slug())}.zip</a> (o link vale por alguns dias).`;
-  }catch(e){ $("zipstatus").textContent="Não foi possível gerar o .zip: "+((e&&e.message)||"erro")+". Os links individuais continuam no bloco FOTOS GERADAS."; }
-  state.zipRodando=false; $("zipfotos").disabled=false;
+  }catch(e){ console.warn("zip",e); }
+  state.zipRodando=false;
 }
-$("zipfotos").addEventListener("click",()=>gerarZip());
 // Matéria: copia também como HTML, com o entretítulo em h2 e cada pergunta em negrito, para colar no editor do site
 function materiaHTML(t){
   const lines=t.split("\n"); let pr=false; const out=[];
@@ -1058,7 +1043,7 @@ Regras:
 - "porque": o texto do "Por quê" daquele corte, literal. No carrossel: uma frase dizendo que reúne as aspas mais fortes do episódio.
 - "esporte": as modalidades de que o conteúdo trata, escolhidas SÓ entre ${JSON.stringify(meta.esporte)}; se nenhuma, ["Sem Esporte Relacionado"].
 - "marca": só se o conteúdo cita ou mostra a marca, escolhida SÓ entre ${JSON.stringify(meta.marca)}; senão ["Sem Marca Envolvida"].
-- "olimpico": true se o assunto envolve QUALQUER modalidade olímpica (fora o futebol). "feminino": true se tem QUALQUER relação com o futebol feminino.
+- "olimpico": true se o conteúdo menciona QUALQUER uma das 9 modalidades olímpicas do Flamengo (${MODALIDADES_OLIMPICAS}) ou mostra ou cita atleta, comissão técnica ou diretoria de uma delas ("Remo" como adversário no futebol não conta). "feminino": true se tem QUALQUER relação com o futebol feminino.
 Formato exato: {"esporte":[],"marca":[],"olimpico":false,"feminino":false,"cards":[{"corte":1,"formato":"9x16","data":"","redes":[],"porque":"","legenda":"","laminas":0}]}
 
 BLOCO:
@@ -1067,17 +1052,16 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
     if(!lista.length) throw new Error("a IA não devolveu nenhum card");
     const so=(a,ops,pad)=>{ const v=(Array.isArray(a)?a:[]).filter(x=>ops.includes(x)); return v.length?v:[pad]; };
     const esporte=so(plano.esporte,meta.esporte,"Sem Esporte Relacionado"), marca=so(plano.marca,meta.marca,"Sem Marca Envolvida");
-    const areas=["Redes | @Flamengo",plano.olimpico?"Redes | @TimeFlamengo":"",plano.feminino?"Redes | @FlamengoFutebolFeminino":"","FlamengoTV"];
+    const olimpico=!!plano.olimpico||!!plano.feminino||!!olimpicoNoTexto([titulo,$("convidado").value,pub].join("\n"));
+    const areas=["Redes | @Flamengo",olimpico?"Redes | @TimeFlamengo":"",plano.feminino?"Redes | @FlamengoFutebolFeminino":"","FlamengoTV"];
     const dataOk=d=>/^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2})?$/.test(String(d||""))?d:(H||hoje).slice(0,10);
     const txt=pacoteEditor(soN); const feitos=[];
     for(let i=0;i<lista.length;i++){
       const c=lista[i]; const n=soN||+c.corte||i+1; const car=c.formato==="carrossel";
       nStatus(`Notion: criando o card ${i+1} de ${lista.length}…`);
-      const foto=(state.fotos||[]).find(f=>f.tipo==="corte"&&f.corte===n); const esc9=foto&&escolhida(foto);
       feitos.push(await NT.criar({titulo:car?`CARROSSEL DE ASPAS | ${nomeProg} | ${titulo}`:soN?`REPORTAGEM ESPECIAL${c.formato==="16x9"?" (16x9)":""} | ${nomeProg} | ${titulo}`:`CORTE #${n}${c.formato==="16x9"?" (16x9)":""} | ${nomeProg} | ${titulo}`,
         icone:ICONES[p.n],dataPostagem:dataOk(c.data),areas,entregavel:ENTREGAVEL[c.formato],pecas:car?Math.max(1,+c.laminas||1):1,esporte,marca,
         redes:so(c.redes,meta.rede,"Sem Rede Social"),pauta:nomeProg,hashtags:hashtags(p).split(" "),porque:c.porque,legenda:c.legenda,
-        querCapa:c.formato==="9x16",capaUrl:c.formato==="9x16"&&esc9&&esc9.vurl?esc9.vurl:"",capaNome:`capa-corte-${String(n).padStart(2,"0")}-9x16.jpg`,
         editorTxt:car?"":txt,editorNome:`editor-${slug()}.txt`}));
     }
     state.notion=feitos.map(x=>({titulo:x.titulo,url:x.url})); salvaRascunho(); autoSalvar();
@@ -1109,7 +1093,7 @@ async function enviarTextos(soN){
       if(soN) state.zipUrl="";
       if(!state.zipUrl&&(state.fotos||[]).some(f=>doZip(f)&&escolhida(f)&&escolhida(f).url)){ eS("Matéria: gerando o .zip das fotos…"); await gerarZip(soN?doZip:null); }
       eS("Matéria: avisando no WhatsApp…");
-      await wa(`*Matéria para revisão e publicação no site*\n${nomeProg} · ${titulo}\n\nTexto (Google Doc): ${d.url}${link?`\nEpisódio: ${link}`:""}${state.zipUrl?"\nFotos e capas: no .zip a seguir.":"\nFotos: não foi possível gerar o .zip; peça os prints."}`,"aviso da matéria");
+      await wa(`*Matéria para revisão e publicação no site*\n${nomeProg} · ${titulo}\n\nTexto (Google Doc): ${d.url}${link?`\nEpisódio: ${link}`:""}${state.zipUrl?"\nFotos: no .zip a seguir.":"\nFotos: não foi possível gerar o .zip; peça os prints."}`,"aviso da matéria");
       feito.push("aviso da matéria no WhatsApp");
       if(state.zipUrl){ try{ await EN.whatsappZip(state.zipUrl,`fotos-${slug()}.zip`); feito.push(".zip das fotos no WhatsApp"); }catch(e){ falhou.push(e.message); } }
     }
@@ -1136,7 +1120,7 @@ function salvaRascunho(){
   try{
     const d={programa:selP.value,dataH:$("dataH").value,apresentadores:$("apresentadores").value,tema:$("tema").value,convidado:$("convidado").value,aspa:$("aspa").value,link:$("link").value,resumo:$("resumo").value.slice(0,120000),
       ans:state.ans,output:(state.output||"").slice(0,120000),analyzed:!!state.analyzed,editing:state.editing||null,zipUrl:state.zipUrl||"",notion:state.notion||null,entrega:state.entrega||null,
-      fotos:(state.fotos||[]).map(f=>({nome:f.nome,ts:f.ts,tipo:f.tipo,corte:f.corte||0,desc:f.desc||"",sel:f.sel,motivo:f.motivo||"",cands:(f.cands||[]).map(c=>({ts:c.ts,url:c.url,vurl:c.vurl||"",w:c.w,h:c.h,erro:c.erro||""}))})),t:Date.now()};
+      fotos:(state.fotos||[]).map(f=>({nome:f.nome,ts:f.ts,tipo:f.tipo,corte:f.corte||0,desc:f.desc||"",sel:f.sel,motivo:f.motivo||"",cands:(f.cands||[]).map(c=>({ts:c.ts,url:c.url,w:c.w,h:c.h,erro:c.erro||""}))})),t:Date.now()};
     localStorage.setItem(DRAFT_KEY,JSON.stringify(d));
   }catch(e){}
 }
@@ -1156,7 +1140,7 @@ function restauraRascunho(){
 ["programa","apresentadores","convidado","aspa","link","resumo"].forEach(id=>$(id).addEventListener("input",()=>salvaRascunho()));
 function clearForm(){
   limpaRascunho();
-  state.ans={}; state.editing=null; state.output=""; state.analyzed=false; state.fotos=[]; state.zipUrl=""; state.notion=null; state.entrega=null; $("entregastatus").textContent=""; $("fotostatus").textContent=""; $("zipstatus").textContent=""; $("notionstatus").textContent=""; renderGaleria();
+  state.ans={}; state.editing=null; state.output=""; state.analyzed=false; state.fotos=[]; state.fotosFalhou=false; state.zipUrl=""; state.notion=null; state.entrega=null; $("entregastatus").textContent=""; $("fotostatus").textContent=""; $("notionstatus").textContent=""; renderGaleria();
   qs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed","false"));
   ["dataH","tema","convidado","aspa","link","resumo"].forEach(id=>$(id).value="");
   $("apresentadores").value=prog().hosts; $("filestat").textContent=""; $("genstatus").textContent="";
@@ -1196,7 +1180,7 @@ async function salvar(){
   salvaRascunho();
 }
 function loadInto(r){
-  state.editing=r.id; state.ans={...(r.ans||{})}; state.output=r.release||""; state.analyzed=!!r.release; state.fotos=Array.isArray(r.fotos)?r.fotos.map(f=>({...f,cands:[],sel:-1})):[]; state.zipUrl=r.zipUrl||""; state.entrega=r.entrega||null; $("entregastatus").textContent=state.entrega?"Matéria e texto da assessoria deste episódio já enviados.":""; state.notion=r.notion||null; $("notionstatus").textContent=state.notion?`Cards deste episódio já enviados ao Notion (${state.notion.length}).`:""; $("fotostatus").textContent=""; $("zipstatus").textContent=""; renderGaleria();
+  state.editing=r.id; state.ans={...(r.ans||{})}; state.output=r.release||""; state.analyzed=!!r.release; state.fotos=Array.isArray(r.fotos)?r.fotos.map(f=>({...f,cands:[],sel:-1})):[]; state.zipUrl=r.zipUrl||""; state.entrega=r.entrega||null; $("entregastatus").textContent=state.entrega?"Matéria e texto da assessoria deste episódio já enviados.":""; state.notion=r.notion||null; $("notionstatus").textContent=state.notion?`Cards deste episódio já enviados ao Notion (${state.notion.length}).`:""; $("fotostatus").textContent=""; renderGaleria();
   selP.value=r.programa; $("dataH").value=r.dataH||""; $("apresentadores").value=r.apresentadores||prog().hosts; $("tema").value=r.tema||""; $("convidado").value=r.convidado||""; $("aspa").value=r.aspa||""; $("link").value=r.link||""; $("resumo").value=r.resumo||"";
   qs.querySelectorAll("button[data-k]").forEach(b=>{ const v=!!state.ans[b.dataset.k]; b.setAttribute("aria-pressed", (b.dataset.v==="1")===v?"true":"false"); });
   if(state.output) showOutput(); else { $("brief").innerHTML='<span class="placeholder">Clique em Analisar episódio para gerar a matéria.</span>'; $("copy").disabled=true; }

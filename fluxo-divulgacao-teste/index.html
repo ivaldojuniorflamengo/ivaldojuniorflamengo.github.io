@@ -164,8 +164,9 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
       </div>
       <div id="repbox" hidden style="margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:8px">
         <label for="repsel" style="display:block;font-weight:700;margin-bottom:6px">Reportagem especial do episódio</label>
-        <div class="note" style="margin:0 0 8px">Nada do FlaPress é enviado sozinho. Escolha a matéria que vira a reportagem especial: só ela vai para o Notion, para o site (Google Doc) e para a assessoria.</div>
+        <div class="note" style="margin:0 0 8px">Nada do FlaPress é enviado sozinho. Escolha a matéria que vira a reportagem especial: só ela vai para o Notion, para o site (Google Doc) e para a assessoria. Para mais de uma, envie uma, escolha a próxima e envie de novo.</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><select id="repsel" style="flex:1;min-width:220px"></select><button class="btn primary" id="repbtn" type="button">Enviar a reportagem especial</button></div>
+        <div class="note" id="repfeitas" hidden style="margin:8px 0 0"></div>
       </div>
       <div class="status" id="fotostatus"></div>
       <div class="status" id="notionstatus"></div>
@@ -855,11 +856,17 @@ function showOutput(){
   SECS.forEach(([k,label])=>{ if(!secs[k]) return; const btn=document.createElement("button"); btn.className="btn"; btn.textContent="Copiar: "+label; btn.addEventListener("click",()=>k==="MATÉRIA PARA O SITE"?copyMateria(secs[k]):copyText(secs[k],label+" copiado.")); b.appendChild(btn); });
   if(state.output){ const btn=document.createElement("button"); btn.className="btn"; btn.textContent="Copiar: Assessoria de imprensa"; btn.addEventListener("click",()=>copyText(assessoria(),"Resposta para a assessoria copiada.")); b.appendChild(btn); }
   b.hidden=!b.children.length;
-  $("dled").disabled=!(downloadsFn&&secs["PARA O EDITOR"]);
+  $("dled").disabled=!(downloadsFn&&secs["PARA O EDITOR"]); $("dled").hidden=false; $("dled").textContent="Baixar pacote do editor (.txt)";
+  if(prog().cortes==="reportagem"){ // FlaPress: o pacote do editor só existe para a reportagem escolhida e já enviada
+    const env=state.repEnviadas||[], sel=+$("repsel").value;
+    $("dled").hidden=!env.length; $("dled").disabled=!(downloadsFn&&env.includes(sel)); $("dled").textContent=env.includes(sel)?`Baixar pacote do editor da reportagem #${sel} (.txt)`:"Baixar pacote do editor (envie a reportagem antes)";
+  }
   const repM=prog().cortes==="reportagem"; $("notionbtn").hidden=!window.fluxoNotion||repM||!!state.notion||!state.analyzed;
   { const rs=repM&&state.analyzed&&(window.fluxoNotion||window.fluxoEntrega)?reportagens():[]; $("repbox").hidden=!rs.length; const atual=$("repsel").value;
     if(rs.length&&$("repsel").dataset.sig!==JSON.stringify(rs)){ $("repsel").innerHTML=rs.map(r=>`<option value="${r.n}">#${r.n} · ${esc(r.titulo)}</option>`).join(""); $("repsel").dataset.sig=JSON.stringify(rs); if(atual) $("repsel").value=atual; }
-    $("repbtn").disabled=!!(state.notionRodando||state.entregaRodando); } $("notionbtn").disabled=!(state.analyzed&&secs["PARA QUEM PUBLICA"])||!!state.notionRodando; $("notionbtn").textContent="Tentar de novo o envio ao Notion";
+    $("repbtn").disabled=!!(state.notionRodando||state.entregaRodando);
+    const env=state.repEnviadas||[], sel=+$("repsel").value; $("repbtn").textContent=env.includes(sel)?`Enviar de novo a reportagem #${sel}`:"Enviar a reportagem especial";
+    $("repfeitas").hidden=!env.length||!rs.length; $("repfeitas").textContent=env.length?"Já enviadas: "+env.map(n=>{ const r=rs.find(x=>x.n===n); return `#${n}${r?" · "+r.titulo:""}`; }).join("; ")+".":""; } $("notionbtn").disabled=!(state.analyzed&&secs["PARA QUEM PUBLICA"])||!!state.notionRodando; $("notionbtn").textContent="Tentar de novo o envio ao Notion";
   $("fotos").hidden=!state.fotosFalhou; $("fotos").disabled=!(mcp&&secs["FOTOS DA MATÉRIA"]&&ytId($("link").value)&&!state.fotosRodando);
 }
 
@@ -1011,7 +1018,8 @@ async function baixar(nome,data){
   catch(e){ if(e&&e.code==="declined") toast("Download cancelado."); else toast("Não foi possível salvar o arquivo."); }
 }
 function pacoteEditor(soN){ const s=sections(); const ed=s["PARA O EDITOR"]||""; return `${prog().n} · ${$("tema").value.trim()}\nApresentação: ${$("apresentadores").value.trim()}\n\n=== PARA O EDITOR ===\n${soN?(()=>{ const L=ed.split("\n"); const k=L.findIndex(l=>/^#\d+\b/.test(l.trim())); return (L.slice(0,k<0?L.length:k).join("\n").trim()+"\n\n"+trechoN(ed,soN)).trim(); })():ed}\n\n=== TRANSCRIÇÃO ===\n${transcricaoAtual()}`; }
-$("dled").addEventListener("click",()=>baixar(`editor-${slug()}.txt`,pacoteEditor()));
+$("dled").addEventListener("click",()=>{ if(prog().cortes==="reportagem"){ const n=+$("repsel").value; if(!(state.repEnviadas||[]).includes(n)) return; baixar(`editor-${slug()}-reportagem-${n}.txt`,pacoteEditor(n)); } else baixar(`editor-${slug()}.txt`,pacoteEditor()); });
+$("repsel").addEventListener("change",()=>showOutput());
 
 // --- Notion: um card por conteúdo (corte em 9:16; corte em 16:9 à parte; carrossel de aspas), montado pela IA a partir do bloco dos publicadores
 const ICONES={"Memengo":"🤡","Exposed Tático":"🧠","Resenha do Galinho":"🐓","FlaPress":"📰","Corre o Tempo no Olhar":"👀","Isso Aqui É Flamengo":"🎙️","Em Nome do Jogo":"📊","Vlog no Maraca":"🏟️","Entrevista Exclusiva":"🫂","Mengocast":"🎤"};
@@ -1065,7 +1073,7 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
         redes:so(c.redes,meta.rede,"Sem Rede Social"),pauta:nomeProg,hashtags:hashtags(p).split(" "),porque:c.porque,legenda:c.legenda,
         editorTxt:car?"":txt,editorNome:`editor-${slug()}.txt`}));
     }
-    state.notion=feitos.map(x=>({titulo:x.titulo,url:x.url})); salvaRascunho(); autoSalvar();
+    const novos=feitos.map(x=>({titulo:x.titulo,url:x.url,...(soN?{rep:soN}:{})})); state.notion=soN?[...(state.notion||[]),...novos]:novos; salvaRascunho(); autoSalvar();
     const avisos=feitos.flatMap(x=>x.avisos.map(a=>`${x.titulo.split(" | ")[0]}: ${a}`)); if(!meta.statusOk) avisos.unshift('o status "Rafa Edits" não existe na base; os cards entraram em "Backlog"');
     $("notionstatus").innerHTML=`${feitos.length} ${feitos.length===1?"card criado":"cards criados"} no Notion: `+feitos.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.titulo.split(" | ")[0])}</a>`).join(" · ")+(avisos.length?`<br>Atenção: ${esc(avisos.join("; "))}.`:"");
   }catch(e){ nStatus("Não foi possível criar os cards no Notion: "+((e&&e.message)||"erro")+". Tente de novo pelo botão “Tentar de novo o envio ao Notion”."); }
@@ -1074,7 +1082,7 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
 $("notionbtn").addEventListener("click",()=>enviarNotion());
 $("repbtn").addEventListener("click",async()=>{ const n=+$("repsel").value; if(!n) return; $("repbtn").disabled=true;
   if(window.fluxoNotion) await enviarNotion(n); if(window.fluxoEntrega) await enviarTextos(n);
-  state.repEscolhida=n; showOutput(); });
+  state.repEscolhida=n; state.repEnviadas=[...new Set([...(state.repEnviadas||[]),n])].sort((a,b)=>a-b); salvaRascunho(); autoSalvar(); showOutput(); });
 
 // --- Etapa 4: a matéria vira Google Doc e o aviso vai por WhatsApp, com o .zip das fotos; o texto da assessoria vai junto quando a decisão é trabalhar imprensa
 const COM_MATERIA=["Em Nome do Jogo","Corre o Tempo no Olhar","Entrevista Exclusiva","Mengocast","Exposed Tático","Resenha do Galinho","FlaPress"]; // programas cujo cronograma prevê matéria no site
@@ -1105,7 +1113,7 @@ async function enviarTextos(soN){
       if(A.mensagem){ await pausa(); await wa("*MENSAGEM PARA O GRUPO DE IMPRENSA* ⬇️","título"); await pausa(); await wa(A.mensagem,"mensagem"); }
       feito.push("decisão da assessoria"+(A.mensagem?" e mensagem para o grupo de imprensa":"")+" no WhatsApp"); ent.assessoria=true;
     }
-    state.entrega=ent; salvaRascunho(); autoSalvar();
+    state.entrega=soN?{...(state.entrega||{}),reps:{...((state.entrega&&state.entrega.reps)||{}),[soN]:ent}}:ent; salvaRascunho(); autoSalvar();
     $("entregastatus").innerHTML=feito.length?`Enviado: ${esc(feito.join("; "))}.${ent.doc?` <a href="${esc(ent.doc)}" target="_blank" rel="noopener">Abrir o Doc</a>`:""}${falhou.length?`<br>Atenção: ${esc(falhou.join("; "))}.`:""}`:"";
     if(!feito.length) eS("");
   }catch(e){ eS(`Não foi possível concluir o envio: ${(e&&e.message)||"erro"}.${feito.length?" Já enviado: "+feito.join("; ")+".":""}`); }
@@ -1120,7 +1128,7 @@ const DRAFT_KEY="fluxo-divulgacao-rascunho";
 function salvaRascunho(){
   try{
     const d={programa:selP.value,dataH:$("dataH").value,apresentadores:$("apresentadores").value,tema:$("tema").value,convidado:$("convidado").value,aspa:$("aspa").value,link:$("link").value,resumo:$("resumo").value.slice(0,120000),
-      ans:state.ans,output:(state.output||"").slice(0,120000),analyzed:!!state.analyzed,editing:state.editing||null,zipUrl:state.zipUrl||"",notion:state.notion||null,entrega:state.entrega||null,
+      ans:state.ans,output:(state.output||"").slice(0,120000),analyzed:!!state.analyzed,editing:state.editing||null,zipUrl:state.zipUrl||"",notion:state.notion||null,entrega:state.entrega||null,repEnviadas:state.repEnviadas||[],
       fotos:(state.fotos||[]).map(f=>({nome:f.nome,ts:f.ts,tipo:f.tipo,corte:f.corte||0,desc:f.desc||"",sel:f.sel,motivo:f.motivo||"",cands:(f.cands||[]).map(c=>({ts:c.ts,url:c.url,w:c.w,h:c.h,erro:c.erro||""}))})),t:Date.now()};
     localStorage.setItem(DRAFT_KEY,JSON.stringify(d));
   }catch(e){}
@@ -1131,7 +1139,7 @@ function restauraRascunho(){
   if(!d||!d.t||Date.now()-d.t>3*24*3600*1000) return false;
   if(!(d.tema||d.link||d.resumo||d.output)) return false;
   selP.value=d.programa||selP.value; $("dataH").value=d.dataH||""; $("apresentadores").value=d.apresentadores||prog().hosts; $("tema").value=d.tema||""; $("convidado").value=d.convidado||""; $("aspa").value=d.aspa||""; $("link").value=d.link||""; $("resumo").value=d.resumo||"";
-  state.ans={...(d.ans||{})}; state.output=d.output||""; state.analyzed=!!d.analyzed; state.editing=d.editing||null; state.zipUrl=d.zipUrl||""; state.notion=d.notion||null; state.entrega=d.entrega||null;
+  state.ans={...(d.ans||{})}; state.output=d.output||""; state.analyzed=!!d.analyzed; state.editing=d.editing||null; state.zipUrl=d.zipUrl||""; state.notion=d.notion||null; state.entrega=d.entrega||null; state.repEnviadas=Array.isArray(d.repEnviadas)?d.repEnviadas:[];
   state.fotos=Array.isArray(d.fotos)?d.fotos.map(f=>({...f,cands:(f.cands||[]).map(c=>({...c,thumb:""}))})):[];
   qs.querySelectorAll("button[data-k]").forEach(b=>{ const v=!!state.ans[b.dataset.k]; b.setAttribute("aria-pressed",(b.dataset.v==="1")===v?"true":"false"); });
   if(state.output) showOutput(); renderGaleria();
@@ -1141,7 +1149,7 @@ function restauraRascunho(){
 ["programa","apresentadores","convidado","aspa","link","resumo"].forEach(id=>$(id).addEventListener("input",()=>salvaRascunho()));
 function clearForm(){
   limpaRascunho();
-  state.ans={}; state.editing=null; state.output=""; state.analyzed=false; state.fotos=[]; state.fotosFalhou=false; state.zipUrl=""; state.notion=null; state.entrega=null; $("entregastatus").textContent=""; $("fotostatus").textContent=""; $("notionstatus").textContent=""; renderGaleria();
+  state.ans={}; state.editing=null; state.output=""; state.analyzed=false; state.fotos=[]; state.fotosFalhou=false; state.zipUrl=""; state.notion=null; state.entrega=null; state.repEnviadas=[]; $("entregastatus").textContent=""; $("fotostatus").textContent=""; $("notionstatus").textContent=""; renderGaleria();
   qs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed","false"));
   ["dataH","tema","convidado","aspa","link","resumo"].forEach(id=>$(id).value="");
   $("apresentadores").value=prog().hosts; $("filestat").textContent=""; $("genstatus").textContent="";
@@ -1156,7 +1164,7 @@ const mem=[];
 function docBody(){
   return {programa:selP.value, dataH:$("dataH").value, apresentadores:$("apresentadores").value.trim(), tema:$("tema").value.trim(), convidado:$("convidado").value.trim(),
     aspa:$("aspa").value.trim(), link:$("link").value.trim(), resumo:$("resumo").value.trim().slice(0,60000),
-    release:(state.output||"").slice(0,60000), fotos:(state.fotos||[]).map(f=>{ const c=escolhida(f); return {nome:f.nome,ts:f.ts,url:(c&&c.url)||"",tipo:f.tipo||"",corte:f.corte||0,desc:f.desc||""}; }), zipUrl:state.zipUrl||"", notion:state.notion||null, entrega:state.entrega||null, ans:{...state.ans},
+    release:(state.output||"").slice(0,60000), fotos:(state.fotos||[]).map(f=>{ const c=escolhida(f); return {nome:f.nome,ts:f.ts,url:(c&&c.url)||"",tipo:f.tipo||"",corte:f.corte||0,desc:f.desc||""}; }), zipUrl:state.zipUrl||"", notion:state.notion||null, entrega:state.entrega||null, repEnviadas:state.repEnviadas||[], ans:{...state.ans},
     por:uid||"", savedAt:new Date().toISOString()};
 }
 // Salvamento automático: o episódio entra no histórico ao fim da análise e o mesmo registro é atualizado a cada mudança (uma gravação por vez, para não duplicar)
@@ -1181,7 +1189,7 @@ async function salvar(){
   salvaRascunho();
 }
 function loadInto(r){
-  state.editing=r.id; state.ans={...(r.ans||{})}; state.output=r.release||""; state.analyzed=!!r.release; state.fotos=Array.isArray(r.fotos)?r.fotos.map(f=>({...f,cands:[],sel:-1})):[]; state.zipUrl=r.zipUrl||""; state.entrega=r.entrega||null; $("entregastatus").textContent=state.entrega?"Matéria e texto da assessoria deste episódio já enviados.":""; state.notion=r.notion||null; $("notionstatus").textContent=state.notion?`Cards deste episódio já enviados ao Notion (${state.notion.length}).`:""; $("fotostatus").textContent=""; renderGaleria();
+  state.editing=r.id; state.ans={...(r.ans||{})}; state.output=r.release||""; state.analyzed=!!r.release; state.fotos=Array.isArray(r.fotos)?r.fotos.map(f=>({...f,cands:[],sel:-1})):[]; state.zipUrl=r.zipUrl||""; state.entrega=r.entrega||null; state.repEnviadas=Array.isArray(r.repEnviadas)?r.repEnviadas:[]; $("entregastatus").textContent=state.entrega?"Matéria e texto da assessoria deste episódio já enviados.":""; state.notion=r.notion||null; $("notionstatus").textContent=state.notion?`Cards deste episódio já enviados ao Notion (${state.notion.length}).`:""; $("fotostatus").textContent=""; renderGaleria();
   selP.value=r.programa; $("dataH").value=r.dataH||""; $("apresentadores").value=r.apresentadores||prog().hosts; $("tema").value=r.tema||""; $("convidado").value=r.convidado||""; $("aspa").value=r.aspa||""; $("link").value=r.link||""; $("resumo").value=r.resumo||"";
   qs.querySelectorAll("button[data-k]").forEach(b=>{ const v=!!state.ans[b.dataset.k]; b.setAttribute("aria-pressed", (b.dataset.v==="1")===v?"true":"false"); });
   if(state.output) showOutput(); else { $("brief").innerHTML='<span class="placeholder">Clique em Analisar episódio para gerar a matéria.</span>'; $("copy").disabled=true; }

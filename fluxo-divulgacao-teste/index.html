@@ -75,19 +75,6 @@ th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute
 td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:4px;cursor:pointer;margin-right:4px}
 .empty{padding:22px;color:var(--muted)}
 .note{font-size:13px;color:var(--muted);margin-top:8px}
-.gal{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
-.gal h3{margin-bottom:6px}
-.mom{margin:10px 0 14px}
-.mom .t{font-size:13px;margin-bottom:6px}
-.mom .t b{font-family:var(--mono);font-weight:400;font-size:12px}
-.cands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.cand{padding:0;border:3px solid var(--line);background:var(--bg);cursor:pointer;border-radius:4px;overflow:hidden;position:relative;text-align:left}
-.cand img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
-.cand span{position:absolute;left:6px;top:6px;font-family:var(--display);font-weight:700;font-size:13px;background:rgba(0,0,0,.65);color:#fff;padding:1px 7px;border-radius:3px}
-.cand.sel{border-color:var(--red)}
-.cand.sel span{background:var(--red)}
-.cand:focus-visible{outline:2px solid var(--red);outline-offset:2px}
-.mom .why{font-size:12.5px;color:var(--muted);margin-top:5px}
 .infowrap{position:relative;margin-top:6px}
 .ibtn{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--muted);font:italic 700 14px Georgia,serif;cursor:pointer;line-height:1;padding:0}
 .ibtn:hover,.ibtn[aria-expanded=true]{border-color:var(--red);color:var(--red)}
@@ -324,7 +311,7 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
   window.claude={ use:async name=>{ await pronto; return caps[name]||null; } };
 })();
 
-// ---- Notion (cards da equipe de redes), pelo Make: só na versão que tem esta parte incluída
+// ---- Notion (cards da equipe de redes), Google Doc da matéria e WhatsApp, pelo Make: só na versão que tem esta parte incluída
 (function(){
   const HOOK_N="https://hook.us2.make.com/d17kqoff94i26hnxu59yuxbr35gcc87k";
   const DB="2cbc17813688809a8cacd2a2df0c2ba2";
@@ -352,17 +339,12 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
     metaCache={esporte:o("Esporte"),marca:o("Marca Envolvida"),rede:o("Rede Social"),status:st.find(x=>x.toLowerCase().includes(STATUS_PREFERIDO.toLowerCase()))||STATUS_RESERVA,statusOk:st.some(x=>x.toLowerCase().includes(STATUS_PREFERIDO.toLowerCase()))};
     return metaCache;
   }
-  async function anexoUrl(url,nome){
-    const f=await post("file_uploads",{mode:"external_url",external_url:url,filename:nome});
-    for(let i=0;i<20;i++){ await new Promise(r=>setTimeout(r,1500)); const g=await N("get",{path:"file_uploads/"+f.id}); if(g.status==="uploaded") return f.id; if(g.status==="failed"||g.status==="expired") throw new Error("o Notion não conseguiu importar a imagem"); }
-    throw new Error("a imagem demorou demais para entrar no Notion");
-  }
   async function anexoTexto(texto,nome){
     const f=await post("file_uploads",{filename:nome,content_type:"text/plain"});
     await N("upload",{id:f.id,name:nome,text:texto});
     return f.id;
   }
-  // card: {titulo, icone, dataPostagem, areas[], entregavel, pecas, esporte[], marca[], redes[], pauta, hashtags[], porque, legenda, capaUrl, capaNome, editorTxt, editorNome}
+  // card: {titulo, icone, dataPostagem, areas[], entregavel, pecas, esporte[], marca[], redes[], pauta, hashtags[], porque, legenda, editorTxt, editorNome}
   async function criar(card){
     const m=await meta(); const agora=new Date();
     const dp=/T/.test(card.dataPostagem)?card.dataPostagem.slice(0,16)+":00-03:00":card.dataPostagem;
@@ -386,18 +368,13 @@ td .mini{font:inherit;font-size:12px;padding:3px 8px;border:1px solid var(--line
     return {url:page.url,titulo:card.titulo,avisos};
   }
   window.fluxoNotion={meta,criar};
-})();
-// ---- Matéria (Google Doc) e avisos por WhatsApp, pelo mesmo cenário do Make
-(function(){
-  const HOOK_N="https://hook.us2.make.com/d17kqoff94i26hnxu59yuxbr35gcc87k";
-  const code=()=>{ try{ return (JSON.parse(localStorage.getItem("fluxo-divulgacao-acesso")||"{}").code)||""; }catch(e){ return ""; } };
+  // ---- Matéria (Google Doc) e avisos por WhatsApp, pelo mesmo cenário do Make
   async function E(action,fields,oque){
     const r=await fetch(HOOK_N,{method:"POST",body:new URLSearchParams({code:code(),action,...fields})});
     const t=await r.text(); let j=null; try{ j=JSON.parse(t); }catch(e){}
     if(r.status>=400||!j) throw new Error(oque+" falhou ("+r.status+")");
     return j;
   }
-  const TESTE=/[?&]teste=1\b/.test(location.search);
   // destino do WhatsApp: a versão oficial manda "oficial" (o Make troca para o número real); homologação e ?teste=1 vão para o número de teste
   const DESTINO="teste"==="oficial"&&!TESTE?"oficial":"teste";
   window.fluxoEntrega={
@@ -662,6 +639,7 @@ $("analisar").addEventListener("click", async ()=>{
   const redesD1=rd.map(k=>`- ${REDES[k].n}: ${REDES[k].campos}`).join("\n");
   const repMode=p.cortes==="reportagem";
   const golMode=p.cortes==="gols";
+  const semImp=p.seg==="Sem imprensa"; // Memengo e Vlog no Maraca: sem blocos da assessoria (economiza tokens)
   const UNID=repMode?"reportagem":"corte", UNIDS=repMode?"reportagens especiais":"cortes";
   const regras=`Você é o assessor de imprensa do Flamengo, o redator do site flamengo.com.br e o redator de redes sociais da FlamengoTV, canal do clube no YouTube. Escreva em português do Brasil, jornalístico e direto, sem adjetivos vazios. Use SOMENTE o que está na transcrição/roteiro abaixo: nunca invente fato, dado de carreira, número ou aspa. Se faltar uma informação, escreva o texto sem ela; nunca comente a falta dentro do texto (nada de "o roteiro não traz…"). Todo texto de matéria, legenda ou mensagem é texto final para publicar, não um recado para o editor. Entregue texto puro, sem markdown. O episódio JÁ ESTÁ PUBLICADO: não escreva data, horário de publicação nem embargo em lugar nenhum. Minutagem só aparece onde o formato abaixo pede [mm:ss].`;
   const contexto=`Programa: ${p.n}
@@ -735,16 +713,16 @@ Como escolher o momento: a câmera costuma estar em quem está falando, então m
 ${repMode?"":`=== MATÉRIA PARA O SITE ===
 ${regrasMateria}
 
-`}${repMode?"":`=== MENSAGEM PARA O GRUPO DE IMPRENSA ===
+`}${repMode||semImp?"":`=== MENSAGEM PARA O GRUPO DE IMPRENSA ===
 ${MSG_IMPRENSA}
 
-`}=== POTENCIAL DE MANCHETE ===
+`}${semImp?"":`=== POTENCIAL DE MANCHETE ===
 Avalie, só com base na transcrição, se o episódio traz declaração ou fato com potencial de manchete para a imprensa: revelação, bastidor inédito, posição sobre polêmica ou número novo. Exatamente duas linhas: na primeira, só a palavra SIM ou NÃO; na segunda, se SIM, a declaração ou o fato (literal e curto, com o nome de quem disse) e por que rende manchete; se NÃO, o motivo em uma frase.
 
 === ESPORTE OLÍMPICO ===
 Diga se o episódio envolve alguma modalidade olímpica do Flamengo. O clube tem 9: ${MODALIDADES_OLIMPICAS}. Basta que qualquer uma delas seja mencionada no episódio, ou que apareça ou seja citado atleta, integrante de comissão técnica ou da diretoria de uma delas. Atenção: "Remo" pode ser o Clube do Remo, adversário no futebol; isso não conta. Exatamente duas linhas: na primeira, só a palavra SIM ou NÃO; na segunda, se SIM, a modalidade e quem é a pessoa ou onde é citada; se NÃO, um traço.
 
-${contexto}`;
+`}${contexto}`;
   const promptC=(n,linhas)=>`${regras}
 
 Este episódio do ${p.n} tem várias reportagens. Agora você trabalha SÓ na reportagem #${n}, descrita no bloco do editor abaixo. Use só a parte da transcrição dentro do intervalo dela; o resto do episódio é contexto e não entra em nenhum texto.
@@ -773,7 +751,7 @@ ${contexto}`;
   ctl=new AbortController();
   $("analisar").disabled=true; $("cancelar").hidden=false; $("genstatus").textContent="Lendo a transcrição…";
   const head=header(p);
-  state.fotos=[]; renderGaleria();
+  state.fotos=[];
   let textA="", textB="";
   const monta=()=>{ state.output=head+"\n"+posProcessa(textA,p,link)+(textB?"\n\n"+posProcessa(textB,p,link):""); showOutput(); };
   try{
@@ -872,13 +850,13 @@ function showOutput(){
 
 // --- fotos: extrai frames direto do stream do YouTube (Actor próprio no Apify), 3 opções por momento; a IA pré-escolhe olhando as imagens
 const FRAMES_ACTOR="leonardo.mello/youtube-frames";
-const OFFSETS={materia:[0,2.5,5]};
+const OFFSETS=[0,2.5,5]; // 3 opções por momento, com poucos segundos de diferença
 function toSec(ts){ const p=String(ts).split(":").map(Number); if(p.length===2) p.unshift(0); return p[0]*3600+p[1]*60+p[2]; }
 function parseFotos(){
   const s=sections(); const out=[];
   (s["FOTOS DA MATÉRIA"]||"").split("\n").forEach(l=>{
     const m=l.match(/^\s*(foto-[a-z0-9_\-]+\.(?:jpg|png))\s*·\s*\[?(\d{1,2}:\d{2}(?::\d{2})?)\]?\s*(?:·\s*(.*))?$/i);
-    if(m) out.push({nome:m[1].toLowerCase().replace(/\.png$/,".jpg"),ts:m[2],tipo:"materia",desc:(m[3]||"").trim()});
+    if(m) out.push({nome:m[1].toLowerCase().replace(/\.png$/,".jpg"),ts:m[2],desc:(m[3]||"").trim()});
   });
   return out.slice(0,14);
 }
@@ -908,7 +886,7 @@ async function gerarFotos(){
   state.fotosRodando=true; state.fotosFalhou=false; showOutput(); salvaRascunho();
   try{
     const ts=[]; const mapa=[];
-    lista.forEach((f,i)=>{ const base=toSec(f.ts); OFFSETS[f.tipo].forEach(o=>{ ts.push(String(base+o)); mapa.push(i); }); });
+    lista.forEach((f,i)=>{ const base=toSec(f.ts); OFFSETS.forEach(o=>{ ts.push(String(base+o)); mapa.push(i); }); });
     fStatus(`Extraindo ${ts.length} opções de imagem em 1080p (${lista.length} momentos; sem baixar o vídeo inteiro)…`);
     const nomes=ts.map((_,k)=>`opcao-${String(k+1).padStart(2,"0")}.jpg`);
     const items=await rodarFrames({url:link,timestamps:ts,names:nomes},(n,s)=>fStatus(`Extraindo opções de imagem… ${n}/${ts.length} (${s} s)`));
@@ -934,7 +912,6 @@ async function gerarFotos(){
   state.fotosRodando=false; showOutput(); if(state.fotos&&state.fotos.length) autoSalvar();
 }
 // data:image/jpeg;base64 → Blob (a página não acessa a rede; as miniaturas vêm embutidas no resultado)
-function dataToBlob(uri){ const i=uri.indexOf(","); const bin=atob(uri.slice(i+1)); const u=new Uint8Array(bin.length); for(let k=0;k<bin.length;k++) u[k]=bin.charCodeAt(k); return new Blob([u],{type:"image/jpeg"}); }
 function loadImg(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src; }); }
 // Pranchas de contato: cada linha = um momento, colunas A/B/C; até 4 momentos por imagem
 async function pranchas(fotos){
@@ -973,20 +950,17 @@ Responda só com um JSON: um array com um objeto por momento, {"m": número do m
   if(!Array.isArray(r)) return;
   r.forEach(x=>{ const f=fotos[(+x.m)-1]; if(!f) return; const k="ABC".indexOf(String(x.e||"").trim().toUpperCase()[0]); if(k>=0&&f.cands[k]&&f.cands[k].url){ f.sel=k; f.motivo=String(x.motivo||"").slice(0,140); } });
 }
-function renderGaleria(){} // a galeria saiu da tela: a IA escolhe o frame e tudo segue sozinho
-function escolhida(f){ return f.sel>=0&&f.cands&&f.cands[f.sel]?f.cands[f.sel]:(f.url?{url:f.url}:null); }
+function escolhida(f){ return f.sel>=0&&f.cands&&f.cands[f.sel]?f.cands[f.sel]:(f.url?{url:f.url,ts:f.ts}:null); }
 // As fotos vão pelo .zip (nomes iguais aos da lista FOTOS DA MATÉRIA); o texto não recebe links.
 async function gerarZip(filtro){
   const fotos=(state.fotos||[]).filter(f=>(typeof filtro!=="function"||filtro(f))&&escolhida(f)&&escolhida(f).url&&escolhida(f).ts!==undefined);
   if(!fotos.length) return;
-  state.zipRodando=true;
   try{
     const items=await rodarFrames({url:$("link").value.trim(),timestamps:fotos.map(f=>String(escolhida(f).ts)),names:fotos.map(f=>f.nome),thumbnail:true,zip:true,zipName:`fotos-${slug()}.zip`},(n,s)=>{ $("entregastatus").textContent=`Matéria: gerando o .zip das fotos… ${n}/${fotos.length} (${s} s)`; });
     const done=items.find(x=>x.type==="done");
     if(!done||!done.zipUrl) throw new Error("o Apify não devolveu o arquivo");
     state.zipUrl=done.zipUrl; salvaRascunho(); autoSalvar();
   }catch(e){ console.warn("zip",e); }
-  state.zipRodando=false;
 }
 // Matéria: copia também como HTML, com o entretítulo em h2 e cada pergunta em negrito, para colar no editor do site
 function materiaHTML(t){
@@ -1082,7 +1056,7 @@ ${pub}`,{modelTier:"default",cache:false,maxTokens:8000});
 $("notionbtn").addEventListener("click",()=>enviarNotion());
 $("repbtn").addEventListener("click",async()=>{ const n=+$("repsel").value; if(!n) return; $("repbtn").disabled=true;
   if(window.fluxoNotion) await enviarNotion(n); if(window.fluxoEntrega) await enviarTextos(n);
-  state.repEscolhida=n; state.repEnviadas=[...new Set([...(state.repEnviadas||[]),n])].sort((a,b)=>a-b); salvaRascunho(); autoSalvar(); showOutput(); });
+  state.repEnviadas=[...new Set([...(state.repEnviadas||[]),n])].sort((a,b)=>a-b); salvaRascunho(); autoSalvar(); showOutput(); });
 
 // --- Etapa 4: a matéria vira Google Doc e o aviso vai por WhatsApp, com o .zip das fotos; o texto da assessoria vai junto quando a decisão é trabalhar imprensa
 const COM_MATERIA=["Em Nome do Jogo","Corre o Tempo no Olhar","Entrevista Exclusiva","Mengocast","Exposed Tático","Resenha do Galinho","FlaPress"]; // programas cujo cronograma prevê matéria no site
@@ -1094,7 +1068,7 @@ async function enviarTextos(soN){
   const feito=[], falhou=[]; const ent={wa:[]}; const wa=async(t,o)=>{ const r=await EN.whatsapp(t); ent.wa.push({o,id:(r&&(r.messageId||r.zaapId))||""}); return r; };
   try{
     const mat=!COM_MATERIA.includes(p.n)?"":soN?materiaN(soN):(secs["MATÉRIA PARA O SITE"]||"").trim();
-    const doZip=f=>!soN||f.corte===soN||new RegExp("^foto-0*"+soN+"\\b").test(f.nome||"");
+    const doZip=f=>!soN||new RegExp("^foto-0*"+soN+"\\b").test(f.nome||"");
     if(mat){
       eS("Matéria: criando o Google Doc…");
       const html=`<html><head><meta charset="utf-8"></head><body>${materiaHTML(mat).split("\n").join("\n<p><br></p>\n")}</body></html>`;
@@ -1129,7 +1103,7 @@ function salvaRascunho(){
   try{
     const d={programa:selP.value,dataH:$("dataH").value,apresentadores:$("apresentadores").value,tema:$("tema").value,convidado:$("convidado").value,aspa:$("aspa").value,link:$("link").value,resumo:$("resumo").value.slice(0,120000),
       ans:state.ans,output:(state.output||"").slice(0,120000),analyzed:!!state.analyzed,editing:state.editing||null,zipUrl:state.zipUrl||"",notion:state.notion||null,entrega:state.entrega||null,repEnviadas:state.repEnviadas||[],
-      fotos:(state.fotos||[]).map(f=>({nome:f.nome,ts:f.ts,tipo:f.tipo,corte:f.corte||0,desc:f.desc||"",sel:f.sel,motivo:f.motivo||"",cands:(f.cands||[]).map(c=>({ts:c.ts,url:c.url,w:c.w,h:c.h,erro:c.erro||""}))})),t:Date.now()};
+      fotos:(state.fotos||[]).map(f=>({nome:f.nome,ts:f.ts,desc:f.desc||"",sel:f.sel,motivo:f.motivo||"",cands:(f.cands||[]).map(c=>({ts:c.ts,url:c.url,w:c.w,h:c.h,erro:c.erro||""}))})),t:Date.now()};
     localStorage.setItem(DRAFT_KEY,JSON.stringify(d));
   }catch(e){}
 }
@@ -1142,14 +1116,14 @@ function restauraRascunho(){
   state.ans={...(d.ans||{})}; state.output=d.output||""; state.analyzed=!!d.analyzed; state.editing=d.editing||null; state.zipUrl=d.zipUrl||""; state.notion=d.notion||null; state.entrega=d.entrega||null; state.repEnviadas=Array.isArray(d.repEnviadas)?d.repEnviadas:[];
   state.fotos=Array.isArray(d.fotos)?d.fotos.map(f=>({...f,cands:(f.cands||[]).map(c=>({...c,thumb:""}))})):[];
   qs.querySelectorAll("button[data-k]").forEach(b=>{ const v=!!state.ans[b.dataset.k]; b.setAttribute("aria-pressed",(b.dataset.v==="1")===v?"true":"false"); });
-  if(state.output) showOutput(); renderGaleria();
+  if(state.output) showOutput();
   $("genstatus").textContent="Preenchimento recuperado do rascunho desta máquina."+(state.fotos.length?" As miniaturas das fotos não voltam depois de recarregar; gere os prints de novo se precisar escolher.":"");
   return true;
 }
 ["programa","apresentadores","convidado","aspa","link","resumo"].forEach(id=>$(id).addEventListener("input",()=>salvaRascunho()));
 function clearForm(){
   limpaRascunho();
-  state.ans={}; state.editing=null; state.output=""; state.analyzed=false; state.fotos=[]; state.fotosFalhou=false; state.zipUrl=""; state.notion=null; state.entrega=null; state.repEnviadas=[]; $("entregastatus").textContent=""; $("fotostatus").textContent=""; $("notionstatus").textContent=""; renderGaleria();
+  state.ans={}; state.editing=null; state.output=""; state.analyzed=false; state.fotos=[]; state.fotosFalhou=false; state.zipUrl=""; state.notion=null; state.entrega=null; state.repEnviadas=[]; $("entregastatus").textContent=""; $("fotostatus").textContent=""; $("notionstatus").textContent="";
   qs.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed","false"));
   ["dataH","tema","convidado","aspa","link","resumo"].forEach(id=>$(id).value="");
   $("apresentadores").value=prog().hosts; $("filestat").textContent=""; $("genstatus").textContent="";
@@ -1164,7 +1138,7 @@ const mem=[];
 function docBody(){
   return {programa:selP.value, dataH:$("dataH").value, apresentadores:$("apresentadores").value.trim(), tema:$("tema").value.trim(), convidado:$("convidado").value.trim(),
     aspa:$("aspa").value.trim(), link:$("link").value.trim(), resumo:$("resumo").value.trim().slice(0,60000),
-    release:(state.output||"").slice(0,60000), fotos:(state.fotos||[]).map(f=>{ const c=escolhida(f); return {nome:f.nome,ts:f.ts,url:(c&&c.url)||"",tipo:f.tipo||"",corte:f.corte||0,desc:f.desc||""}; }), zipUrl:state.zipUrl||"", notion:state.notion||null, entrega:state.entrega||null, repEnviadas:state.repEnviadas||[], ans:{...state.ans},
+    release:(state.output||"").slice(0,60000), fotos:(state.fotos||[]).map(f=>{ const c=escolhida(f); return {nome:f.nome,ts:c&&c.ts!==undefined?c.ts:f.ts,url:(c&&c.url)||"",desc:f.desc||""}; }), zipUrl:state.zipUrl||"", notion:state.notion||null, entrega:state.entrega||null, repEnviadas:state.repEnviadas||[], ans:{...state.ans},
     por:uid||"", savedAt:new Date().toISOString()};
 }
 // Salvamento automático: o episódio entra no histórico ao fim da análise e o mesmo registro é atualizado a cada mudança (uma gravação por vez, para não duplicar)
@@ -1189,7 +1163,7 @@ async function salvar(){
   salvaRascunho();
 }
 function loadInto(r){
-  state.editing=r.id; state.ans={...(r.ans||{})}; state.output=r.release||""; state.analyzed=!!r.release; state.fotos=Array.isArray(r.fotos)?r.fotos.map(f=>({...f,cands:[],sel:-1})):[]; state.zipUrl=r.zipUrl||""; state.entrega=r.entrega||null; state.repEnviadas=Array.isArray(r.repEnviadas)?r.repEnviadas:[]; $("entregastatus").textContent=state.entrega?"Matéria e texto da assessoria deste episódio já enviados.":""; state.notion=r.notion||null; $("notionstatus").textContent=state.notion?`Cards deste episódio já enviados ao Notion (${state.notion.length}).`:""; $("fotostatus").textContent=""; renderGaleria();
+  state.editing=r.id; state.ans={...(r.ans||{})}; state.output=r.release||""; state.analyzed=!!r.release; state.fotos=Array.isArray(r.fotos)?r.fotos.map(f=>({...f,cands:[],sel:-1})):[]; state.zipUrl=r.zipUrl||""; state.entrega=r.entrega||null; state.repEnviadas=Array.isArray(r.repEnviadas)?r.repEnviadas:[]; $("entregastatus").textContent=state.entrega?"Matéria e texto da assessoria deste episódio já enviados.":""; state.notion=r.notion||null; $("notionstatus").textContent=state.notion?`Cards deste episódio já enviados ao Notion (${state.notion.length}).`:""; $("fotostatus").textContent="";
   selP.value=r.programa; $("dataH").value=r.dataH||""; $("apresentadores").value=r.apresentadores||prog().hosts; $("tema").value=r.tema||""; $("convidado").value=r.convidado||""; $("aspa").value=r.aspa||""; $("link").value=r.link||""; $("resumo").value=r.resumo||"";
   qs.querySelectorAll("button[data-k]").forEach(b=>{ const v=!!state.ans[b.dataset.k]; b.setAttribute("aria-pressed", (b.dataset.v==="1")===v?"true":"false"); });
   if(state.output) showOutput(); else { $("brief").innerHTML='<span class="placeholder">Clique em Analisar episódio para gerar a matéria.</span>'; $("copy").disabled=true; }
